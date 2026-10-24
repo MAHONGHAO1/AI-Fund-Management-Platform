@@ -6,3 +6,4 @@ plotly>=5.22
 openai>=1.40
 tabulate>=0.9
 lxml>=5.2
+akshare>=1.15
