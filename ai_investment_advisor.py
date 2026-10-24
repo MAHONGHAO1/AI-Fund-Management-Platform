@@ -303,12 +303,14 @@ def benchmark_for_fund(name: str, fund_type: str) -> str:
 
 
 def show_notice_once(key: str, message: str, level: str = "warning") -> None:
-    """在 Streamlit 界面和终端各提示一次，避免重复刷屏。"""
+    """在 Streamlit 界面和终端各提示一次，避免重复刷屏。level 为 none 时只写终端日志。"""
     if key in UI_NOTICES:
         return
     UI_NOTICES.add(key)
     print(message, flush=True)
     try:
+        if level == "none":
+            return
         if level == "error":
             st.error(message)
         elif level == "info":
@@ -398,7 +400,7 @@ def fetch_nav_with_eastmoney(code: str) -> pd.DataFrame:
                     show_notice_once(
                         f"eastmoney_retry_failed_{code}_{page}",
                         f"东方财富接口请求失败：{code} 第 {page} 页，已重试 2 次，原因：{exc}",
-                        "warning",
+                        "none",
                     )
                     raise ValueError(f"东方财富请求失败：{last_error}") from exc
         frames.append(tables[0])
@@ -1051,9 +1053,24 @@ def get_dashscope_api_key() -> str:
         return ""
 
 
+def get_glm_api_key() -> str:
+    session_key = st.session_state.get("glm_api_key", "").strip()
+    if session_key:
+        return session_key
+    return os.getenv("GLM_API_KEY", "").strip()
+
+
+def get_ai_config() -> tuple[str, str, str]:
+    """返回 (api_key, base_url, model)。优先智谱 GLM（免费模型可用），回落 DashScope。"""
+    glm_key = get_glm_api_key()
+    if glm_key:
+        return glm_key, "https://open.bigmodel.cn/api/paas/v4", os.getenv("GLM_MODEL", "glm-4-flash")
+    return get_dashscope_api_key(), "https://dashscope.aliyuncs.com/compatible-mode/v1", os.getenv("DASHSCOPE_MODEL", "qwen-plus")
+
+
 def call_qwen_advice_pair(row: dict[str, Any]) -> tuple[str, str]:
-    """一次通义千问调用同时生成简短建议和详细建议，减少 API 调用次数。"""
-    api_key = get_dashscope_api_key()
+    """一次大模型调用同时生成简短建议和详细建议，减少 API 调用次数。"""
+    api_key, base_url, model = get_ai_config()
     mock_short = mock_short_advice(
         row["基金名称"],
         to_float(row["近1年收益率"]),
@@ -1067,11 +1084,10 @@ def call_qwen_advice_pair(row: dict[str, Any]) -> tuple[str, str]:
     try:
         client = OpenAI(
             api_key=api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            base_url=base_url,
             timeout=10.0,
             max_retries=0,
         )
-        model = os.getenv("DASHSCOPE_MODEL", "qwen-plus")
         prompt = f"""
 请基于以下基金数据，输出中文建议，不承诺收益。
 基金名称：{row["基金名称"]}
@@ -1115,7 +1131,7 @@ def call_qwen_advice_pair(row: dict[str, Any]) -> tuple[str, str]:
             short_text, detail_text = parse_qwen_advice_pair(text)
             return validated_advice(short_text, detail_text, row, mock_short, mock_detail)
     except Exception as exc:
-        show_notice_once("qwen_call_failed", f"通义千问调用失败，已使用本地 mock 建议：{exc}", "warning")
+        show_notice_once("qwen_call_failed", f"AI 调用失败，已使用本地 mock 建议：{exc}", "warning")
 
     return mock_short, ensure_ai_disclaimer(mock_detail)
 
@@ -1929,11 +1945,14 @@ def require_mock_data_confirmation(rows: list[dict[str, Any]]) -> bool:
 
     codes = ",".join(sorted(str(row["代码"]).zfill(6) for row in mock_rows))
     confirm_key = f"mock_data_confirmed_{codes}"
-    st.error(
-        "检测到以下基金使用模拟数据："
-        + "、".join(f"{row['基金名称']}（{str(row['代码']).zfill(6)}）" for row in mock_rows)
-        + "。模拟数据只能用于界面流程验证，不能用于判断基金表现。"
+    st.warning(
+        f"有 {len(mock_rows)} 只基金未能从公开接口获取净值，正在使用模拟数据展示界面流程"
+        "（明细展开见下），不能用于判断基金表现。"
     )
+    with st.expander("查看使用模拟数据的基金明细"):
+        st.markdown(
+            "、".join(f"{row['基金名称']}（{str(row['代码']).zfill(6)}）" for row in mock_rows)
+        )
     confirmed = st.checkbox("我已了解上述基金使用模拟数据，仍继续查看结果", key=confirm_key)
     if not confirmed:
         st.stop()
@@ -1975,6 +1994,8 @@ def main() -> None:
         st.session_state.refresh_token = 0
     if "dashscope_api_key" not in st.session_state:
         st.session_state.dashscope_api_key = ""
+    if "glm_api_key" not in st.session_state:
+        st.session_state.glm_api_key = ""
     if "holdings" not in st.session_state:
         st.session_state.holdings = default_holdings()
     else:
@@ -1986,24 +2007,34 @@ def main() -> None:
 
     st.sidebar.title("AI 智选基金助手")
     with st.sidebar.expander("设置", expanded=False):
+        glm_key_input = st.text_input(
+            "GLM_API_KEY（智谱 BigModel，推荐）",
+            value=st.session_state.glm_api_key,
+            type="password",
+            help="在 bigmodel.cn 获取；glm-4-flash 为免费模型。仅临时保存在当前会话中。",
+        )
         api_key_input = st.text_input(
-            "DASHSCOPE_API_KEY",
+            "DASHSCOPE_API_KEY（通义千问，备选）",
             value=st.session_state.dashscope_api_key,
             type="password",
             help="仅临时保存在当前 Streamlit 会话中，不写入文件。",
         )
         c1, c2 = st.columns(2)
         if c1.button("应用 Key", use_container_width=True):
+            st.session_state.glm_api_key = glm_key_input.strip()
             st.session_state.dashscope_api_key = api_key_input.strip()
             st.cache_data.clear()
             st.session_state.refresh_token += 1
             st.rerun()
         if c2.button("清除 Key", use_container_width=True):
+            st.session_state.glm_api_key = ""
             st.session_state.dashscope_api_key = ""
             st.cache_data.clear()
             st.session_state.refresh_token += 1
             st.rerun()
-        if st.session_state.dashscope_api_key:
+        if get_glm_api_key():
+            st.caption("已配置 GLM_API_KEY，AI 建议将使用智谱模型。")
+        elif st.session_state.dashscope_api_key:
             st.caption("已使用会话中的 DASHSCOPE_API_KEY。")
         elif get_dashscope_api_key():
             st.caption("当前使用已配置的 DASHSCOPE_API_KEY。")
