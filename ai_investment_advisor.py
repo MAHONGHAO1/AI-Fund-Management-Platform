@@ -112,18 +112,18 @@ BENCHMARKS = {
 
 
 def default_holdings() -> list[dict[str, Any]]:
-    """首次运行使用的示例组合，用户可在界面增删改。"""
+    """首次运行使用的虚构合成组合，用户可在界面增删改。"""
     sample_values = {
-        "006887": {"amount": 912.07, "hold_ret": 58.48, "cum_profit": 516.79},
-        "012920": {"amount": 776.69, "hold_ret": 61.82, "cum_profit": 285.87},
-        "023895": {"amount": 324.36, "hold_ret": 29.82, "cum_profit": 110.63},
-        "008585": {"amount": 220.95, "hold_ret": 28.72, "cum_profit": 74.64},
-        "270042": {"amount": 284.25, "hold_ret": 16.03, "cum_profit": 40.40},
-        "010990": {"amount": 544.87, "hold_ret": 6.39, "cum_profit": 34.31},
-        "014881": {"amount": 11.56, "hold_ret": 15.60, "cum_profit": -15.30},
-        "009478": {"amount": 47.43, "hold_ret": -5.41, "cum_profit": 6.56},
-        "002611": {"amount": 130.59, "hold_ret": -7.21, "cum_profit": 44.31},
-        "024642": {"amount": 125.07, "hold_ret": -3.82, "cum_profit": -4.93},
+        "006887": {"amount": 1000.00, "hold_ret": 5.20, "cum_profit": 49.50},
+        "012920": {"amount": 800.00, "hold_ret": -2.10, "cum_profit": -17.15},
+        "023895": {"amount": 600.00, "hold_ret": 3.40, "cum_profit": 19.73},
+        "008585": {"amount": 500.00, "hold_ret": 1.80, "cum_profit": 8.83},
+        "270042": {"amount": 700.00, "hold_ret": 4.10, "cum_profit": 27.54},
+        "010990": {"amount": 400.00, "hold_ret": -1.30, "cum_profit": -5.27},
+        "014881": {"amount": 900.00, "hold_ret": 6.70, "cum_profit": 56.43},
+        "009478": {"amount": 300.00, "hold_ret": 0.90, "cum_profit": 2.67},
+        "002611": {"amount": 350.00, "hold_ret": -0.70, "cum_profit": -2.46},
+        "024642": {"amount": 450.00, "hold_ret": 2.50, "cum_profit": 10.98},
     }
     return [
         {
@@ -1434,6 +1434,7 @@ def render_holdings_editor() -> None:
                 st.warning("至少保留一只基金。")
                 return
             st.session_state.holdings = normalize_holdings(updated_holdings)
+            st.session_state.synthetic_portfolio = False
             st.cache_data.clear()
             st.session_state.refresh_token += 1
             st.success("持仓已保存，正在刷新分析结果。")
@@ -1441,6 +1442,7 @@ def render_holdings_editor() -> None:
 
         if c2.button("恢复示例", use_container_width=True):
             st.session_state.holdings = default_holdings()
+            st.session_state.synthetic_portfolio = True
             st.cache_data.clear()
             st.session_state.refresh_token += 1
             st.rerun()
@@ -1737,7 +1739,7 @@ def selected_row_from_table(event: Any, rows: list[dict[str, Any]]) -> dict[str,
     return None
 
 
-def build_markdown_report(rows: list[dict[str, Any]]) -> str:
+def build_markdown_report(rows: list[dict[str, Any]], *, synthetic_portfolio: bool = True) -> str:
     generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     df = pd.DataFrame(rows)
     sorted_df = df.sort_values("综合评分(0-10)", ascending=False)
@@ -1813,11 +1815,13 @@ def build_markdown_report(rows: list[dict[str, Any]]) -> str:
     if not warning_df.empty:
         warning_text = "\n> 注意：以下基金使用了模拟数据，仅用于流程验证：" + "、".join(warning_df["基金名称"].tolist()) + "\n"
 
+    portfolio_note = "\n> 持仓为虚构合成示例，仅演示组合分析流程。\n" if synthetic_portfolio else ""
     return f"""# 基金量化分析报告
 
 生成时间：{generated_at}
 
 > 免责声明：{COMPLIANCE_DISCLOSURE}
+{portfolio_note}
 {warning_text}
 ## 核心评分与建议
 
@@ -1837,7 +1841,7 @@ def build_markdown_report(rows: list[dict[str, Any]]) -> str:
 """
 
 
-def build_html_report(rows: list[dict[str, Any]]) -> str:
+def build_html_report(rows: list[dict[str, Any]], *, synthetic_portfolio: bool = True) -> str:
     summary = portfolio_summary(rows)
     sorted_rows = sorted(rows, key=lambda item: item["综合评分(0-10)"], reverse=True)
     bar_html = bar_chart(rows).to_html(full_html=False, include_plotlyjs="cdn", config={"responsive": True})
@@ -1878,6 +1882,7 @@ def build_html_report(rows: list[dict[str, Any]]) -> str:
     if any(row.get("数据来源") == "模拟数据" for row in sorted_rows):
         names = "、".join(row["基金名称"] for row in sorted_rows if row.get("数据来源") == "模拟数据")
         mock_warning = f'<div class="warning">注意：以下基金使用模拟数据，仅用于流程验证：{names}</div>'
+    portfolio_warning = '<div class="warning">持仓为虚构合成示例，仅演示组合分析流程。</div>' if synthetic_portfolio else ""
 
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -1910,6 +1915,7 @@ def build_html_report(rows: list[dict[str, Any]]) -> str:
   <h1>基金组合可视化报告</h1>
   <div class="muted">生成时间：{summary["generated_at"]}</div>
   <div class="disclaimer">{COMPLIANCE_DISCLOSURE}</div>
+  {portfolio_warning}
   {mock_warning}
   <div class="grid">
     <div class="metric"><p>总持仓金额</p><b>{summary["total_amount"]:.2f}</b></div>
@@ -1998,8 +2004,11 @@ def main() -> None:
         st.session_state.glm_api_key = ""
     if "holdings" not in st.session_state:
         st.session_state.holdings = default_holdings()
+        st.session_state.synthetic_portfolio = True
     else:
         st.session_state.holdings = normalize_holdings(st.session_state.holdings)
+    if "synthetic_portfolio" not in st.session_state:
+        st.session_state.synthetic_portfolio = True
     if "holdings_snapshot_date" not in st.session_state:
         st.session_state.holdings_snapshot_date = default_snapshot_date()
     if "auto_update_holdings" not in st.session_state:
@@ -2059,14 +2068,14 @@ def main() -> None:
     if filtered_rows:
         st.sidebar.download_button(
             "导出 Markdown 报告",
-            data=build_markdown_report(filtered_rows).encode("utf-8-sig"),
+            data=build_markdown_report(filtered_rows, synthetic_portfolio=st.session_state.synthetic_portfolio).encode("utf-8-sig"),
             file_name="fund_report.md",
             mime="text/markdown",
             use_container_width=True,
         )
         st.sidebar.download_button(
             "导出 HTML 可视化报告",
-            data=build_html_report(filtered_rows).encode("utf-8"),
+            data=build_html_report(filtered_rows, synthetic_portfolio=st.session_state.synthetic_portfolio).encode("utf-8"),
             file_name="fund_report_可视化.html",
             mime="text/html",
             use_container_width=True,
@@ -2079,12 +2088,14 @@ def main() -> None:
         st.session_state.refresh_token += 1
         st.rerun()
 
-    st.title("AI 智选基金助手")
-    st.caption("统一应用：数据获取、多维评分、通义千问建议、Markdown/HTML 导出都在本文件内完成。")
+    st.title("AI 智选基金助手 · v0.1.0")
+    st.caption("公开数据分析与组合工程演示；持仓默认使用虚构合成数据。")
     st.info(
         "评分说明：各指标在当前基金池内转换为 0-10 百分位分；收益能力优先看相对比较基准的超额收益；"
         "权重按历史样本 IC/IR 估计，样本不足时回退默认权重。"
     )
+    if st.session_state.synthetic_portfolio:
+        st.warning("当前组合为虚构合成示例，仅用于界面演示与流程验证；请勿将示例金额或收益视作真实账户数据。")
     if auto_update_holdings:
         updated_count = sum(1 for row in rows if row.get("持仓已自动更新"))
         st.success(f"持仓已按 {snapshot_date} 快照净值自动更新到最新净值日期，共更新 {updated_count} 只基金。")
