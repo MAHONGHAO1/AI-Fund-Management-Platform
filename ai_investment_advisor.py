@@ -460,6 +460,11 @@ def make_mock_nav(code: str) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def offline_demo_enabled() -> bool:
+    """离线作品展示模式；默认关闭，避免覆盖公开数据源的正常路径。"""
+    return os.getenv("FUND_OFFLINE_DEMO", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def fetch_nav_history(code: str) -> tuple[pd.DataFrame, str, str]:
     errors = []
     for source, fetcher in [("东方财富", fetch_nav_with_eastmoney), ("AkShare", fetch_nav_with_akshare)]:
@@ -1266,6 +1271,18 @@ def load_data(
     rows = []
     for holding_item in holdings_list:
         fund = {"code": holding_item["code"], "name": holding_item["name"]}
+        if offline_demo_enabled():
+            rows.append(
+                analyze_fund_with_mock(
+                    fund,
+                    make_mock_nav(fund["code"]),
+                    "FUND_OFFLINE_DEMO 已启用：使用合成净值演示界面流程。",
+                    holdings,
+                    snapshot_date,
+                    auto_update_holdings,
+                )
+            )
+            continue
         try:
             rows.append(analyze_fund(fund, holdings, refresh_token, snapshot_date, auto_update_holdings))
         except Exception as exc:
@@ -1473,12 +1490,12 @@ def build_table_df(rows: list[dict[str, Any]]) -> pd.DataFrame:
     table_df["代码"] = table_df["代码"].astype(str).str.zfill(6)
     for col in ["当前持有金额", "当前持有收益率", "快照持有金额", "近1月收益率", "近1年收益率", "近1年超额收益率", "综合评分(0-10)"]:
         table_df[col] = table_df[col].map(lambda x: round(to_float(x), 2))
-    return table_df
+    return table_df.astype(object).where(pd.notna(table_df), "—")
 
 
 def highlight_mock_rows(row: pd.Series) -> list[str]:
     if row.get("数据来源") == "模拟数据":
-        return ["background-color: #7f1d1d; color: #fee2e2;" for _ in row]
+        return ["background-color: #fff4d6; color: #5c4200;" for _ in row]
     return ["" for _ in row]
 
 
@@ -1585,6 +1602,8 @@ def selected_funds_radar_chart(rows: list[dict[str, Any]]) -> go.Figure:
 @st.cache_data(ttl=86400, show_spinner="正在加载回测净值...")
 def load_nav_for_backtest(code: str, refresh_token: int = 0) -> tuple[pd.DataFrame, str, str]:
     _ = refresh_token
+    if offline_demo_enabled():
+        return make_mock_nav(code), "模拟数据", "FUND_OFFLINE_DEMO 已启用：回测使用合成净值。"
     return fetch_nav_history(code)
 
 
@@ -1951,10 +1970,16 @@ def require_mock_data_confirmation(rows: list[dict[str, Any]]) -> bool:
 
     codes = ",".join(sorted(str(row["代码"]).zfill(6) for row in mock_rows))
     confirm_key = f"mock_data_confirmed_{codes}"
-    st.warning(
-        f"有 {len(mock_rows)} 只基金未能从公开接口获取净值，正在使用模拟数据展示界面流程"
-        "（明细展开见下），不能用于判断基金表现。"
-    )
+    if offline_demo_enabled():
+        st.warning(
+            f"离线演示模式已启用，{len(mock_rows)} 只基金使用合成净值展示界面流程"
+            "（明细展开见下），不能用于判断基金表现。"
+        )
+    else:
+        st.warning(
+            f"有 {len(mock_rows)} 只基金未能从公开接口获取净值，正在使用模拟数据展示界面流程"
+            "（明细展开见下），不能用于判断基金表现。"
+        )
     with st.expander("查看使用模拟数据的基金明细"):
         st.markdown(
             "、".join(f"{row['基金名称']}（{str(row['代码']).zfill(6)}）" for row in mock_rows)
@@ -2111,7 +2136,7 @@ def main() -> None:
     st.subheader("基金数据表格")
     table_df = build_table_df(filtered_rows)
     table_event = st.dataframe(
-        table_df.style.apply(highlight_mock_rows, axis=1),
+        table_df.style.apply(highlight_mock_rows, axis=1).format(na_rep="—"),
         use_container_width=True,
         hide_index=True,
         on_select="rerun",

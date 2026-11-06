@@ -39,6 +39,19 @@ python -m pytest -q
 
 可在侧栏设置中临时输入 GLM 或 DashScope Key。Key 仅留在当前 Streamlit 会话中；不要提交 `.env`、Secrets 或密钥文件。
 
+### 离线作品展示
+
+若只想稳定查看界面、无需等待外部净值接口，可在启动前启用合成净值演示模式。页面会明确标记合成数据，并继续使用无密钥 AI 本地回退：
+
+```powershell
+$env:FUND_OFFLINE_DEMO = "1"
+streamlit run ai_investment_advisor.py
+```
+
+默认不启用该模式；清除变量或新开终端后，应用恢复公开净值数据源流程。
+
+![AI 智选基金助手 v0.1.0 页面截图：合成组合与离线演示](docs/screenshots/app_v0.1.0.png)
+
 ## 展示边界
 
 展示图表和报告时，先确认数据来源标签。示例持仓是合成数据，接口故障时的净值是模拟数据，二者用途不同。仓库不保存真实账户、不提交交易，也不提供公开在线交互服务。

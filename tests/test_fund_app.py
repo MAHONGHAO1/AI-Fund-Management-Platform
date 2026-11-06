@@ -77,6 +77,24 @@ def test_data_source_failures_fall_back_to_mock(monkeypatch):
     assert len(data) >= 2 and np.isfinite(data["nav"]).all()
 
 
+def test_offline_demo_mode_skips_external_data_sources(monkeypatch):
+    monkeypatch.setenv("FUND_OFFLINE_DEMO", "true")
+    monkeypatch.setattr(fund, "fetch_nav_history", lambda code: pytest.fail("network path called"))
+    monkeypatch.setattr(fund, "load_benchmark_history", lambda *args: pytest.fail("benchmark path called"))
+
+    holdings = fund.holdings_to_json([{"code": "006887", "name": "合成科技基金", "amount": 1000}])
+    rows = fund.load_data.__wrapped__(0, holdings, "2026-05-28", False)
+
+    assert len(rows) == 1
+    assert rows[0]["数据来源"] == "模拟数据"
+    assert "FUND_OFFLINE_DEMO" in rows[0]["错误信息"]
+
+    backtest_nav, backtest_source, backtest_error = fund.load_nav_for_backtest.__wrapped__("006887")
+    assert len(backtest_nav) >= 60
+    assert backtest_source == "模拟数据"
+    assert "FUND_OFFLINE_DEMO" in backtest_error
+
+
 def test_reports_mark_synthetic_portfolio():
     row = {"基金名称": "合成基金", "代码": "000001", "基金类型": "科技", "比较基准": "沪深300",
            "最新净值日期": "2025-01-01", "单位净值": 1.0, "持仓快照日期": "2025-01-01",
