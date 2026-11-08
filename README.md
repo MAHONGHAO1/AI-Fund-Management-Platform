@@ -1,66 +1,104 @@
 # AI 智选基金助手
 
-**本地运行的基金数据分析与组合演示工具 · v0.1.0**
+**v0.2.0 开发版 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
 
-本项目将公开净值数据、风险收益指标、基金池相对评分与 AI 文本解释放在一个 Streamlit 页面中，适合作为个人产品工程展示。默认持仓为醒目标注的虚构合成组合；数据源全部不可用时会转为模拟净值，无密钥时 AI 建议使用本地规则。
+把组合表现、风险指标、基金明细和数据来源放进一套本地分析工作台。Python 继续负责净值处理、指标计算与 AI 回退；浏览器只呈现本机 API 返回的分析结果。
 
-> This local Streamlit app combines public fund NAV data, risk and return metrics, relative scoring, and AI generated explanations. Its default portfolio is synthetic and clearly labeled. It is an engineering demonstration, not investment advice or a trading system.
+![基金观察工作台：离线演示中的合成组合、收益风险视图和来源标签](docs/screenshots/app_v0.2.0.png)
+
+> 截图于 2026-11-09 从 FastAPI 本地服务生成。持仓是虚构合成样例，净值标为模拟数据；由于区间不足一年，近一年收益明确显示为不可用，基准比较也不可用。截图仅展示界面和数据来源呈现。
+
+[观看 7 秒工作台交互演示（WebM）](docs/screenshots/demo-v0.2.0.webm) · 使用离线合成数据，无真实账户或投资数据。
 
 ## 能力与验证
 
-- 东方财富与 AkShare 净值数据源；失败后显示模拟数据来源和错误原因。
-- 净值合理性检查、收益率、最大回撤、风险调整指标和五维基金池评分。
-- 会话级 GLM / DashScope Key；不配置 Key 时使用带免责声明的本地建议。
-- 持仓只保存在当前会话；Markdown 和 HTML 报告对虚构组合与模拟净值分别标记。
-- 自动化测试覆盖持仓归一化、净值拒绝规则、收益与回撤、评分回退、数据源失败、无密钥 AI 和报告标识。
+- **组合总览**：持仓金额、累计收益、基金数量、组合评分、结构图和可筛选持仓表。
+- **绩效与风险**：收益、回撤、波动率和净值历史；缺失或样本不足的指标显示不可用，不用零值代替。
+- **来源说明**：基金净值和基准分别记录来源、数据日期、回退状态与失败原因，并显示在页面和 Markdown / HTML 报告中。
+- **Python 核心**：继续复用既有数据加载、净值标准化、风险计算、相对评分和 AI 文本生成逻辑。
+- **本地 AI 回退**：无密钥时使用本地规则并显示模式与免责声明；有密钥时只随当前建议请求传递，不落盘、不写日志。
+- **验证证据**：测试覆盖公开数据源响应和异常、无效净值、回退、收益与回撤、离线不联网、报告标识和 API 行为；前端包含单测与浏览器流程测试。
 
-数据来自公开接口，服务可用性和字段会变化。模拟净值只验证产品流程，任何评分、历史表现和 AI 文本都不构成投资建议。
+默认持仓是合成数据，不连接真实账户、不提交交易，也不提供投资建议。离线模拟净值只用于演示产品流程；任何图表、评分、收益数字或 AI 文本都不能视为投资结论。
 
 ## 本地启动
 
-需要 Python 3.12。Windows PowerShell 示例：
+需要 Windows、Python 3.12、Node.js 24 LTS 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。克隆仓库后，在 PowerShell 执行：
 
 ```powershell
 git clone https://github.com/MAHONGHAO1/AI-Fund-Management-Platform.git
 cd AI-Fund-Management-Platform
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-streamlit run ai_investment_advisor.py
+py -3.12 -m pip install uv
+uv sync --locked
+Push-Location frontend
+npm ci
+npm run build
+Pop-Location
+$env:FUND_OFFLINE_DEMO = "true"
+uv run --locked python -m fund_web
 ```
 
-macOS / Linux 可将虚拟环境激活命令换成 `source .venv/bin/activate`。应用默认监听本机 `localhost:8501`。运行测试：
+服务只监听本机。默认使用离线演示数据，确保合成持仓、模拟净值和不可用基准的展示可重复；启动后在浏览器打开 [http://127.0.0.1:8766](http://127.0.0.1:8766)。也可在安装好 Node.js 24 LTS 与 uv 后双击 `启动基金助手.cmd`；启动脚本会用 `npm ci` 安装锁定前端依赖、构建页面并启动 FastAPI。它不会自动打开浏览器。
 
-```bash
-pip install pytest
-python -m pytest -q
-```
-
-可在侧栏设置中临时输入 GLM 或 DashScope Key。Key 仅留在当前 Streamlit 会话中；不要提交 `.env`、Secrets 或密钥文件。
-
-### 离线作品展示
-
-若只想稳定查看界面、无需等待外部净值接口，可在启动前启用合成净值演示模式。页面会明确标记合成数据，并继续使用无密钥 AI 本地回退：
+如需开发热更新，可在一个终端运行 `uv run --locked python -m fund_web`，再在另一个终端运行：
 
 ```powershell
-$env:FUND_OFFLINE_DEMO = "1"
-streamlit run ai_investment_advisor.py
+cd frontend
+npm ci
+npm run dev
 ```
 
-默认不启用该模式；清除变量或新开终端后，应用恢复公开净值数据源流程。
+Vite 开发页面地址为 `http://127.0.0.1:5173`，API 请求转发到本机 8766 端口。
 
-![AI 智选基金助手 v0.1.0 页面截图：合成组合与离线演示](docs/screenshots/app_v0.1.0.png)
+### 离线作品演示
 
-## 展示边界
+离线模式下，应用不请求公开净值数据源，页面会分别标记合成持仓和模拟净值；无 API Key 时继续使用本地建议回退。启动脚本默认打开该模式；手工启动后端时也应设置：
 
-展示图表和报告时，先确认数据来源标签。示例持仓是合成数据，接口故障时的净值是模拟数据，二者用途不同。仓库不保存真实账户、不提交交易，也不提供公开在线交互服务。
+```powershell
+$env:FUND_OFFLINE_DEMO = "true"
+.\启动基金助手.cmd
+```
 
-## 版本
+若要检查公开数据源及其回退流程，把变量设为 `false` 后再启动。该设置只影响当前终端启动的进程。
 
+## 测试与锁定依赖
+
+使用与 GitHub Actions 相同的 Python 3.12、Node.js 24 和锁定文件：
+
+```powershell
+uv sync --locked
+uv run --locked python -m pytest -q
+Push-Location frontend
+npm ci
+npm test
+npx playwright install chromium
+npm run test:e2e
+npm run build
+Pop-Location
+```
+
+本机验收环境为 Python 3.12.10 / Node.js 24.15.0；Python 测试 19 项通过，前端单测与浏览器关键流程通过，`npm ci` 安全审计为 0 项漏洞。CI 使用合成响应，不依赖外网基金数据。
+
+## 架构
+
+```mermaid
+flowchart LR
+  UI[React + TypeScript 工作台] -->|同源 /api| API[FastAPI · 127.0.0.1:8766]
+  API --> CORE[Python 分析服务]
+  CORE --> DATA[东方财富 / AkShare / 离线合成数据]
+  CORE --> METRICS[收益、回撤、风险与相对评分]
+  CORE --> AI[当前请求的 AI 文本或本地回退]
+  CORE --> REPORT[Markdown / HTML 报告]
+```
+
+## 文档与发布状态
+
+- [数据来源与计算状态](docs/STATUS_v0.2.0.md)
+- [v0.2.0 Release Notes 草稿](RELEASE_NOTES_v0.2.0.md)
 - [变更记录](CHANGELOG.md)
-- [v0.1.0 Release Notes](RELEASE_NOTES_v0.1.0.md)
+
+当前工作仍在 v0.2.0 功能分支上；GitHub PR、合并和正式 Release 按审阅流程另行处理。
 
 ## English
 
-A local portfolio analysis demo built with Streamlit. It uses public NAV sources with an explicit mock-data fallback, portfolio metrics, relative scoring, and optional session-only AI keys. The bundled holdings are synthetic. No account connection, trading, or investment advice is provided.
+A local portfolio analytics demo with a React and TypeScript frontend, a loopback-only FastAPI bridge, and Python analysis logic. It records NAV and benchmark provenance, labels synthetic holdings and simulated NAV, and keeps benchmark comparisons unavailable when the data does not support them. No account connection, trading, or investment advice is provided.

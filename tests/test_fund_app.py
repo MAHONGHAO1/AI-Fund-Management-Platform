@@ -2,10 +2,12 @@ import importlib.util
 import os
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
 import pytest
+from fund_data import DataProvenance, load_benchmark_series, load_nav_series
 
 os.environ["STREAMLIT_BOOTSTRAPPED"] = "1"
 MODULE_PATH = Path(__file__).resolve().parents[1] / "ai_investment_advisor.py"
@@ -77,6 +79,118 @@ def test_data_source_failures_fall_back_to_mock(monkeypatch):
     assert len(data) >= 2 and np.isfinite(data["nav"]).all()
 
 
+def test_nav_source_fallback_keeps_actual_source_date_and_failure(monkeypatch):
+    good = nav([1.0, 1.1])
+    data, provenance = load_nav_series(
+        "000001",
+        [("东方财富", lambda code: (_ for _ in ()).throw(RuntimeError("HTTP 503"))),
+         ("AkShare", lambda code: good)],
+        lambda code: pytest.fail("synthetic fallback should not be used"),
+    )
+
+    assert data["nav"].tolist() == [1.0, 1.1]
+    assert provenance.source == "AkShare"
+    assert provenance.data_date == "2025-01-02"
+    assert provenance.fallback_status == "none"
+
+
+def test_benchmark_fallback_and_total_failure_are_explicit():
+    good = nav([1.0, 1.02])
+    calls = []
+
+    def fetch(key):
+        calls.append(key)
+        if key == "科创50":
+            raise RuntimeError("primary unavailable")
+        return good
+
+    data, provenance = load_benchmark_series("科创50", fetch, "沪深300", fetch)
+    assert not data.empty
+    assert calls == ["科创50", "沪深300"]
+    assert provenance.source == "沪深300"
+    assert provenance.fallback_status == "fallback"
+    assert "primary unavailable" in provenance.failure_reason
+
+    unavailable, failed = load_benchmark_series(
+        "科创50", lambda key: (_ for _ in ()).throw(RuntimeError("offline")),
+        "沪深300", lambda key: (_ for _ in ()).throw(RuntimeError("offline too")),
+    )
+    assert unavailable.empty and not failed.available
+    assert failed.fallback_status == "unavailable"
+    assert "offline too" in failed.failure_reason
+
+
+def test_akshare_adapter_maps_public_response_columns(monkeypatch):
+    raw = pd.DataFrame({"净值日期": ["2025-01-02", "2025-01-01"],
+                        "单位净值": ["1.2", "1.1"], "累计净值": ["1.4", "1.3"]})
+    fake_ak = SimpleNamespace(fund_open_fund_info_em=lambda **kwargs: raw)
+    monkeypatch.setitem(sys.modules, "akshare", fake_ak)
+    monkeypatch.setattr(fund.importlib.util, "find_spec", lambda name: object())
+
+    result = fund.fetch_nav_with_akshare("000001")
+
+    assert result["date"].dt.strftime("%Y-%m-%d").tolist() == ["2025-01-01", "2025-01-02"]
+    assert result["nav"].tolist() == [1.1, 1.2]
+    assert result["acc_nav"].tolist() == [1.3, 1.4]
+
+
+def test_akshare_adapter_rejects_unexpected_schema(monkeypatch):
+    fake_ak = SimpleNamespace(fund_open_fund_info_em=lambda **kwargs: pd.DataFrame({"bad": [1]}))
+    monkeypatch.setitem(sys.modules, "akshare", fake_ak)
+    monkeypatch.setattr(fund.importlib.util, "find_spec", lambda name: object())
+    with pytest.raises(ValueError, match="字段不符合预期"):
+        fund.fetch_nav_with_akshare("000001")
+
+
+def test_eastmoney_adapter_maps_response_fields_and_reports_http_failure(monkeypatch):
+    monkeypatch.setattr(fund.time, "sleep", lambda seconds: None)
+    raw = pd.DataFrame({"净值日期": ["2025-01-01"], "单位净值": ["1.25"], "累计净值": ["1.5"]})
+
+    class Response:
+        text = 'var x={content:"<table></table>",records:1,pages:1}'
+
+        def raise_for_status(self):
+            return None
+
+    class Session:
+        def __init__(self):
+            self.headers = {}
+
+        def get(self, *args, **kwargs):
+            return Response()
+
+    monkeypatch.setattr(fund.requests, "Session", Session)
+    monkeypatch.setattr(fund.pd, "read_html", lambda *args, **kwargs: [raw])
+    parsed = fund.fetch_nav_with_eastmoney("000001")
+    assert parsed["nav"].tolist() == [1.25]
+    assert parsed["acc_nav"].tolist() == [1.5]
+
+    class FailedSession(Session):
+        def get(self, *args, **kwargs):
+            raise RuntimeError("connection reset")
+
+    monkeypatch.setattr(fund.requests, "Session", FailedSession)
+    with pytest.raises(ValueError, match="东方财富请求失败"):
+        fund.fetch_nav_with_eastmoney("000001")
+
+
+def test_simulated_nav_never_requests_benchmark_and_comparison_is_unavailable(monkeypatch):
+    monkeypatch.setattr(fund, "load_benchmark_history", lambda *args: pytest.fail("synthetic NAV must skip benchmark"))
+    history = nav([1.0 + index * 0.001 for index in range(260)])
+    monkeypatch.setattr(
+        fund, "fetch_nav_history_with_provenance",
+        lambda code: (history, DataProvenance("东方财富、AkShare", "模拟数据", "2025-09-17", "synthetic", "network offline")),
+    )
+    row = fund.analyze_fund({"code": "000001", "name": "合成测试基金"}, {}, 0)
+
+    assert row["比较基准"] == "不可用"
+    assert row["基准可用"] is False
+    assert np.isnan(row["近1年基准收益率"])
+    assert np.isnan(row["近1月超额收益率"])
+    assert np.isnan(row["近1年超额收益率"])
+    assert row["基准来源信息"]["fallback_status"] == "unavailable"
+
+
 def test_offline_demo_mode_skips_external_data_sources(monkeypatch):
     monkeypatch.setenv("FUND_OFFLINE_DEMO", "true")
     monkeypatch.setattr(fund, "fetch_nav_history", lambda code: pytest.fail("network path called"))
@@ -102,6 +216,12 @@ def test_reports_mark_synthetic_portfolio():
            "近1年基准收益率": 1.0, "近1月超额收益率": 0.3, "近1年超额收益率": 0.5,
            "近1年最大回撤": -3.0, "综合评分(0-10)": 5.0, "晨星评级": "三星",
            "数据来源": "模拟数据", "AI建议": "本地示例", "详细AI建议": "仅用于测试",
+           "净值来源信息": {"requested_source": "东方财富、AkShare", "source": "模拟数据",
+                            "data_date": "2025-01-01", "fallback_status": "synthetic",
+                            "failure_reason": "接口不可用", "available": True},
+           "基准来源信息": {"requested_source": "模拟净值不可比较", "source": "不可用",
+                            "data_date": None, "fallback_status": "unavailable",
+                            "failure_reason": "基金净值来自模拟数据", "available": False},
            "收益能力得分": 5.0, "风险控制得分": 6.0, "风险调整收益得分": 5.0,
            "稳定性得分": 5.0, "相对排名得分": 5.0,
            "当前持有金额": 100.0, "当前持有收益率": 1.0, "快照持有金额": 100.0,
@@ -114,4 +234,8 @@ def test_reports_mark_synthetic_portfolio():
                        "稳定性": 5.0, "相对排名": 5.0}}
     assert "虚构合成示例" in fund.build_markdown_report([row])
     assert "虚构合成示例" in fund.build_html_report([row])
+    markdown = fund.build_markdown_report([row])
+    html = fund.build_html_report([row])
+    assert "回退状态：synthetic" in markdown and "接口不可用" in markdown
+    assert "数据日期：2025-01-01" in html and "unavailable" in html
     assert "虚构合成示例" not in fund.build_markdown_report([row], synthetic_portfolio=False)
