@@ -12,6 +12,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timedelta
+from html import escape as html_escape
 from pathlib import Path
 from typing import Any
 
@@ -52,6 +53,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import requests
 import streamlit as st
+from fund_data import DataProvenance, load_benchmark_series, load_nav_series, normalize_nav_history
 from openai import OpenAI
 
 
@@ -112,18 +114,18 @@ BENCHMARKS = {
 
 
 def default_holdings() -> list[dict[str, Any]]:
-    """首次运行使用的示例组合，用户可在界面增删改。"""
+    """首次运行使用的虚构合成组合，用户可在界面增删改。"""
     sample_values = {
-        "006887": {"amount": 912.07, "hold_ret": 58.48, "cum_profit": 516.79},
-        "012920": {"amount": 776.69, "hold_ret": 61.82, "cum_profit": 285.87},
-        "023895": {"amount": 324.36, "hold_ret": 29.82, "cum_profit": 110.63},
-        "008585": {"amount": 220.95, "hold_ret": 28.72, "cum_profit": 74.64},
-        "270042": {"amount": 284.25, "hold_ret": 16.03, "cum_profit": 40.40},
-        "010990": {"amount": 544.87, "hold_ret": 6.39, "cum_profit": 34.31},
-        "014881": {"amount": 11.56, "hold_ret": 15.60, "cum_profit": -15.30},
-        "009478": {"amount": 47.43, "hold_ret": -5.41, "cum_profit": 6.56},
-        "002611": {"amount": 130.59, "hold_ret": -7.21, "cum_profit": 44.31},
-        "024642": {"amount": 125.07, "hold_ret": -3.82, "cum_profit": -4.93},
+        "006887": {"amount": 1000.00, "hold_ret": 5.20, "cum_profit": 49.50},
+        "012920": {"amount": 800.00, "hold_ret": -2.10, "cum_profit": -17.15},
+        "023895": {"amount": 600.00, "hold_ret": 3.40, "cum_profit": 19.73},
+        "008585": {"amount": 500.00, "hold_ret": 1.80, "cum_profit": 8.83},
+        "270042": {"amount": 700.00, "hold_ret": 4.10, "cum_profit": 27.54},
+        "010990": {"amount": 400.00, "hold_ret": -1.30, "cum_profit": -5.27},
+        "014881": {"amount": 900.00, "hold_ret": 6.70, "cum_profit": 56.43},
+        "009478": {"amount": 300.00, "hold_ret": 0.90, "cum_profit": 2.67},
+        "002611": {"amount": 350.00, "hold_ret": -0.70, "cum_profit": -2.46},
+        "024642": {"amount": 450.00, "hold_ret": 2.50, "cum_profit": 10.98},
     }
     return [
         {
@@ -460,14 +462,23 @@ def make_mock_nav(code: str) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def offline_demo_enabled() -> bool:
+    """离线作品展示模式；默认关闭，避免覆盖公开数据源的正常路径。"""
+    return os.getenv("FUND_OFFLINE_DEMO", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def fetch_nav_history_with_provenance(code: str) -> tuple[pd.DataFrame, DataProvenance]:
+    return load_nav_series(
+        code,
+        [("东方财富", fetch_nav_with_eastmoney), ("AkShare", fetch_nav_with_akshare)],
+        make_mock_nav,
+    )
+
+
 def fetch_nav_history(code: str) -> tuple[pd.DataFrame, str, str]:
-    errors = []
-    for source, fetcher in [("东方财富", fetch_nav_with_eastmoney), ("AkShare", fetch_nav_with_akshare)]:
-        try:
-            return fetcher(code), source, ""
-        except Exception as exc:
-            errors.append(f"{source}: {exc}")
-    return make_mock_nav(code), "模拟数据", "；".join(errors)
+    """Keep the original tuple API for backtest call sites and integrations."""
+    data, provenance = fetch_nav_history_with_provenance(code)
+    return data, provenance.source, provenance.failure_reason
 
 
 def fetch_benchmark_history(benchmark_key: str) -> pd.DataFrame:
@@ -505,19 +516,14 @@ def fetch_benchmark_history(benchmark_key: str) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
-def load_benchmark_history(benchmark_key: str, refresh_token: int = 0) -> tuple[pd.DataFrame, str]:
+def load_benchmark_history(benchmark_key: str, refresh_token: int = 0) -> tuple[pd.DataFrame, DataProvenance]:
     _ = refresh_token
-    try:
-        return fetch_benchmark_history(benchmark_key), benchmark_key
-    except Exception as exc:
-        if benchmark_key != "沪深300":
-            show_notice_once(
-                f"benchmark_fallback_{benchmark_key}",
-                f"{benchmark_key} 基准行情加载失败，已回退到沪深300：{exc}",
-                "warning",
-            )
-            return fetch_benchmark_history("沪深300"), "沪深300"
-        raise
+    return load_benchmark_series(
+        benchmark_key,
+        fetch_benchmark_history,
+        "沪深300",
+        fetch_benchmark_history,
+    )
 
 
 def calc_period_return(df: pd.DataFrame, days: int) -> float:
@@ -1019,14 +1025,16 @@ def advice_numbers_are_consistent(text: str, row: dict[str, Any], tolerance: flo
     return True
 
 
-def validated_advice(short_text: str, detail_text: str, row: dict[str, Any], fallback_short: str, fallback_detail: str) -> tuple[str, str]:
+def validated_advice(short_text: str, detail_text: str, row: dict[str, Any], fallback_short: str,
+                     fallback_detail: str, *, notify: bool = True) -> tuple[str, str]:
     merged = f"{short_text}\n{detail_text}"
     if not advice_numbers_are_consistent(merged, row):
-        show_notice_once(
-            f"ai_advice_metric_mismatch_{row['代码']}",
-            f"{row['基金名称']} 的 AI 建议引用数据与表格不一致，已改用本地校验文案。",
-            "warning",
-        )
+        if notify:
+            show_notice_once(
+                f"ai_advice_metric_mismatch_{row['代码']}",
+                f"{row['基金名称']} 的 AI 建议引用数据与表格不一致，已改用本地校验文案。",
+                "warning",
+            )
         return fallback_short, ensure_ai_disclaimer(fallback_detail)
     return short_text or fallback_short, ensure_ai_disclaimer(detail_text or fallback_detail)
 
@@ -1068,9 +1076,24 @@ def get_ai_config() -> tuple[str, str, str]:
     return get_dashscope_api_key(), "https://dashscope.aliyuncs.com/compatible-mode/v1", os.getenv("DASHSCOPE_MODEL", "qwen-plus")
 
 
-def call_qwen_advice_pair(row: dict[str, Any]) -> tuple[str, str]:
+def call_qwen_advice_pair(
+    row: dict[str, Any],
+    *,
+    api_key_override: str | None = None,
+    provider_override: str | None = None,
+    return_status: bool = False,
+) -> tuple[str, str] | tuple[str, str, str]:
     """一次大模型调用同时生成简短建议和详细建议，减少 API 调用次数。"""
-    api_key, base_url, model = get_ai_config()
+    if api_key_override is None:
+        api_key, base_url, model = get_ai_config()
+    else:
+        api_key = api_key_override.strip()
+        if provider_override == "glm":
+            base_url, model = "https://open.bigmodel.cn/api/paas/v4", os.getenv("GLM_MODEL", "glm-4-flash")
+        elif provider_override == "dashscope":
+            base_url, model = "https://dashscope.aliyuncs.com/compatible-mode/v1", os.getenv("DASHSCOPE_MODEL", "qwen-plus")
+        else:
+            raise ValueError("未知 AI 服务商")
     mock_short = mock_short_advice(
         row["基金名称"],
         to_float(row["近1年收益率"]),
@@ -1079,7 +1102,8 @@ def call_qwen_advice_pair(row: dict[str, Any]) -> tuple[str, str]:
     )
     mock_detail = mock_detailed_advice(row)
     if not api_key:
-        return mock_short, ensure_ai_disclaimer(mock_detail)
+        result = (mock_short, ensure_ai_disclaimer(mock_detail))
+        return (*result, "local_fallback") if return_status else result
 
     try:
         client = OpenAI(
@@ -1129,11 +1153,16 @@ def call_qwen_advice_pair(row: dict[str, Any]) -> tuple[str, str]:
         text = response.choices[0].message.content.strip()
         if text:
             short_text, detail_text = parse_qwen_advice_pair(text)
-            return validated_advice(short_text, detail_text, row, mock_short, mock_detail)
+            result = validated_advice(short_text, detail_text, row, mock_short, mock_detail,
+                                      notify=api_key_override is None)
+            mode = "local_fallback" if result == (mock_short, ensure_ai_disclaimer(mock_detail)) else "ai"
+            return (*result, mode) if return_status else result
     except Exception as exc:
-        show_notice_once("qwen_call_failed", f"AI 调用失败，已使用本地 mock 建议：{exc}", "warning")
+        if api_key_override is None:
+            show_notice_once("qwen_call_failed", f"AI 调用失败，已使用本地 mock 建议：{exc}", "warning")
 
-    return mock_short, ensure_ai_disclaimer(mock_detail)
+    result = (mock_short, ensure_ai_disclaimer(mock_detail))
+    return (*result, "local_fallback") if return_status else result
 
 
 def analyze_fund(
@@ -1147,15 +1176,26 @@ def analyze_fund(
     name = fund["name"]
     fund_type = classify_fund(name)
     benchmark_key = benchmark_for_fund(name, fund_type)
-    nav_df, source, error_msg = fetch_nav_history(code)
-    benchmark_df, benchmark_used = load_benchmark_history(benchmark_key, refresh_token)
+    nav_df, nav_provenance = fetch_nav_history_with_provenance(code)
+    if nav_provenance.source == "模拟数据":
+        benchmark_df = pd.DataFrame(columns=["date", "nav"])
+        benchmark_provenance = DataProvenance(
+            benchmark_key, "不可用", None, "unavailable",
+            "基金净值来自模拟数据，基准比较指标不可用", False,
+        )
+    else:
+        benchmark_df, benchmark_provenance = load_benchmark_history(benchmark_key, refresh_token)
+    benchmark_used = benchmark_provenance.source
     latest = nav_df.iloc[-1]
     ret_1m = calc_period_return(nav_df, 30)
     ret_3m = calc_period_return(nav_df, 90)
     ret_1y = calc_period_return(nav_df, 365)
-    benchmark_ret_1y = calc_period_return_until(benchmark_df, latest["date"], 365)
-    excess_ret_1m = calc_excess_return(nav_df, benchmark_df, 30)
-    excess_ret_1y = calc_excess_return(nav_df, benchmark_df, 365)
+    if benchmark_provenance.available:
+        benchmark_ret_1y = calc_period_return_until(benchmark_df, latest["date"], 365)
+        excess_ret_1m = calc_excess_return(nav_df, benchmark_df, 30)
+        excess_ret_1y = calc_excess_return(nav_df, benchmark_df, 365)
+    else:
+        benchmark_ret_1y = excess_ret_1m = excess_ret_1y = float("nan")
     mdd = calc_max_drawdown(nav_df)
     sharpe = calc_sharpe(nav_df)
     volatility = calc_annual_volatility(nav_df)
@@ -1190,9 +1230,14 @@ def analyze_fund(
         "快照单位净值": float(updated_holding["snapshot_nav"]),
         "持仓已自动更新": bool(updated_holding["holding_auto_updated"]),
         "持仓更新说明": updated_holding["holding_update_note"],
-        "数据来源": source,
-        "错误信息": error_msg,
-        "评分回测样本": build_score_backtest_samples(nav_df, benchmark_df),
+        "数据来源": nav_provenance.source,
+        "净值来源信息": nav_provenance.as_dict(),
+        "基准来源信息": benchmark_provenance.as_dict(),
+        "基准可用": benchmark_provenance.available,
+        "错误信息": nav_provenance.failure_reason,
+        "评分回测样本": build_score_backtest_samples(
+            nav_df, benchmark_df if benchmark_provenance.available else pd.DataFrame()
+        ),
     }
 
 
@@ -1221,7 +1266,7 @@ def analyze_fund_with_mock(
         "基金名称": name,
         "代码": code,
         "基金类型": fund_type,
-        "比较基准": "沪深300",
+        "比较基准": "不可用（模拟净值）",
         "最新净值日期": latest["date"].strftime("%Y-%m-%d"),
         "单位净值": float(latest["nav"]),
         "近1月收益率": ret_1m,
@@ -1246,6 +1291,15 @@ def analyze_fund_with_mock(
         "持仓已自动更新": bool(updated_holding["holding_auto_updated"]),
         "持仓更新说明": updated_holding["holding_update_note"],
         "数据来源": "模拟数据",
+        "净值来源信息": DataProvenance(
+            "东方财富、AkShare", "模拟数据", latest["date"].strftime("%Y-%m-%d"),
+            "synthetic", error_msg, True,
+        ).as_dict(),
+        "基准来源信息": DataProvenance(
+            "不可用（模拟净值）", "不可用", None, "unavailable",
+            "基金净值来自模拟数据，基准比较指标不可用", False,
+        ).as_dict(),
+        "基准可用": False,
         "错误信息": error_msg,
         "评分回测样本": [],
     }
@@ -1257,6 +1311,7 @@ def load_data(
     holdings_json: str = "",
     snapshot_date: str = "",
     auto_update_holdings: bool = False,
+    include_advice: bool = True,
 ) -> list[dict[str, Any]]:
     try:
         holdings_list = normalize_holdings(json.loads(holdings_json or "[]"))
@@ -1266,6 +1321,18 @@ def load_data(
     rows = []
     for holding_item in holdings_list:
         fund = {"code": holding_item["code"], "name": holding_item["name"]}
+        if offline_demo_enabled():
+            rows.append(
+                analyze_fund_with_mock(
+                    fund,
+                    make_mock_nav(fund["code"]),
+                    "FUND_OFFLINE_DEMO 已启用：使用合成净值演示界面流程。",
+                    holdings,
+                    snapshot_date,
+                    auto_update_holdings,
+                )
+            )
+            continue
         try:
             rows.append(analyze_fund(fund, holdings, refresh_token, snapshot_date, auto_update_holdings))
         except Exception as exc:
@@ -1282,9 +1349,13 @@ def load_data(
 
     apply_composite_scores(rows)
     for row in rows:
-        short_advice, detailed_advice = call_qwen_advice_pair(row)
-        row["AI建议"] = short_advice
-        row["详细AI建议"] = detailed_advice
+        if include_advice:
+            short_advice, detailed_advice = call_qwen_advice_pair(row)
+            row["AI建议"] = short_advice
+            row["详细AI建议"] = detailed_advice
+        else:
+            row["AI建议"] = "按需生成"
+            row["详细AI建议"] = ""
     return rows
 
 
@@ -1434,6 +1505,7 @@ def render_holdings_editor() -> None:
                 st.warning("至少保留一只基金。")
                 return
             st.session_state.holdings = normalize_holdings(updated_holdings)
+            st.session_state.synthetic_portfolio = False
             st.cache_data.clear()
             st.session_state.refresh_token += 1
             st.success("持仓已保存，正在刷新分析结果。")
@@ -1441,6 +1513,7 @@ def render_holdings_editor() -> None:
 
         if c2.button("恢复示例", use_container_width=True):
             st.session_state.holdings = default_holdings()
+            st.session_state.synthetic_portfolio = True
             st.cache_data.clear()
             st.session_state.refresh_token += 1
             st.rerun()
@@ -1471,12 +1544,12 @@ def build_table_df(rows: list[dict[str, Any]]) -> pd.DataFrame:
     table_df["代码"] = table_df["代码"].astype(str).str.zfill(6)
     for col in ["当前持有金额", "当前持有收益率", "快照持有金额", "近1月收益率", "近1年收益率", "近1年超额收益率", "综合评分(0-10)"]:
         table_df[col] = table_df[col].map(lambda x: round(to_float(x), 2))
-    return table_df
+    return table_df.astype(object).where(pd.notna(table_df), "—")
 
 
 def highlight_mock_rows(row: pd.Series) -> list[str]:
     if row.get("数据来源") == "模拟数据":
-        return ["background-color: #7f1d1d; color: #fee2e2;" for _ in row]
+        return ["background-color: #fff4d6; color: #5c4200;" for _ in row]
     return ["" for _ in row]
 
 
@@ -1583,6 +1656,8 @@ def selected_funds_radar_chart(rows: list[dict[str, Any]]) -> go.Figure:
 @st.cache_data(ttl=86400, show_spinner="正在加载回测净值...")
 def load_nav_for_backtest(code: str, refresh_token: int = 0) -> tuple[pd.DataFrame, str, str]:
     _ = refresh_token
+    if offline_demo_enabled():
+        return make_mock_nav(code), "模拟数据", "FUND_OFFLINE_DEMO 已启用：回测使用合成净值。"
     return fetch_nav_history(code)
 
 
@@ -1737,9 +1812,23 @@ def selected_row_from_table(event: Any, rows: list[dict[str, Any]]) -> dict[str,
     return None
 
 
-def build_markdown_report(rows: list[dict[str, Any]]) -> str:
+def _provenance_text(row: dict[str, Any], key: str) -> str:
+    provenance = row.get(key) or {}
+    if not isinstance(provenance, dict):
+        return "来源信息不可用"
+    source = provenance.get("source") or "未知"
+    requested = provenance.get("requested_source") or "未记录"
+    data_date = provenance.get("data_date") or "日期未知"
+    fallback = provenance.get("fallback_status") or "none"
+    reason = provenance.get("failure_reason") or "无"
+    return f"来源：{source}（请求：{requested}）；数据日期：{data_date}；回退状态：{fallback}；原因：{reason}"
+
+
+def build_markdown_report(rows: list[dict[str, Any]], *, synthetic_portfolio: bool = True) -> str:
     generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     df = pd.DataFrame(rows)
+    df["净值来源信息"] = [_provenance_text(row, "净值来源信息") for row in rows]
+    df["基准来源信息"] = [_provenance_text(row, "基准来源信息") for row in rows]
     sorted_df = df.sort_values("综合评分(0-10)", ascending=False)
     top3 = sorted_df.head(3)
     bottom3 = sorted_df.tail(3).sort_values("综合评分(0-10)")
@@ -1756,6 +1845,8 @@ def build_markdown_report(rows: list[dict[str, Any]]) -> str:
             "综合评分(0-10)",
             "晨星评级",
             "数据来源",
+            "净值来源信息",
+            "基准来源信息",
             "AI建议",
         ]
     ].copy()
@@ -1789,6 +1880,8 @@ def build_markdown_report(rows: list[dict[str, Any]]) -> str:
             "稳定性得分",
             "相对排名得分",
             "数据来源",
+            "净值来源信息",
+            "基准来源信息",
         ]
     ].copy()
     detail_df["单位净值"] = detail_df["单位净值"].map(lambda x: fmt_num(to_float(x), 4))
@@ -1805,6 +1898,8 @@ def build_markdown_report(rows: list[dict[str, Any]]) -> str:
     detail_df["累计收益"] = detail_df["累计收益"].map(lambda x: f"{to_float(x):.2f}")
     for col in ["收益能力得分", "风险控制得分", "风险调整收益得分", "稳定性得分", "相对排名得分"]:
         detail_df[col] = detail_df[col].map(lambda x: fmt_num(to_float(x), 1))
+    detail_df["净值来源信息"] = df["净值来源信息"]
+    detail_df["基准来源信息"] = df["基准来源信息"]
 
     top_text = "、".join([f"{r['基金名称']}（{r['综合评分(0-10)']}分，{r['晨星评级']}）" for _, r in top3.iterrows()])
     bottom_text = "、".join([f"{r['基金名称']}（{r['综合评分(0-10)']}分，{r['晨星评级']}）" for _, r in bottom3.iterrows()])
@@ -1813,11 +1908,13 @@ def build_markdown_report(rows: list[dict[str, Any]]) -> str:
     if not warning_df.empty:
         warning_text = "\n> 注意：以下基金使用了模拟数据，仅用于流程验证：" + "、".join(warning_df["基金名称"].tolist()) + "\n"
 
+    portfolio_note = "\n> 持仓为虚构合成示例，仅演示组合分析流程。\n" if synthetic_portfolio else ""
     return f"""# 基金量化分析报告
 
 生成时间：{generated_at}
 
 > 免责声明：{COMPLIANCE_DISCLOSURE}
+{portfolio_note}
 {warning_text}
 ## 核心评分与建议
 
@@ -1837,7 +1934,7 @@ def build_markdown_report(rows: list[dict[str, Any]]) -> str:
 """
 
 
-def build_html_report(rows: list[dict[str, Any]]) -> str:
+def build_html_report(rows: list[dict[str, Any]], *, synthetic_portfolio: bool = True) -> str:
     summary = portfolio_summary(rows)
     sorted_rows = sorted(rows, key=lambda item: item["综合评分(0-10)"], reverse=True)
     bar_html = bar_chart(rows).to_html(full_html=False, include_plotlyjs="cdn", config={"responsive": True})
@@ -1852,7 +1949,10 @@ def build_html_report(rows: list[dict[str, Any]]) -> str:
           <td>{fmt_pct(to_float(row["近1月收益率"]))}</td><td>{fmt_pct(to_float(row["近1年收益率"]))}</td>
           <td>{fmt_pct(to_float(row.get("近1年超额收益率")))}</td>
           <td>{fmt_pct(to_float(row["近1年最大回撤"]))}</td><td>{row["综合评分(0-10)"]}</td>
-          <td>{row["晨星评级"]}</td><td>{row["数据来源"]}</td><td>{row["AI建议"]}</td>
+          <td>{row["晨星评级"]}</td><td>{row["数据来源"]}</td>
+          <td>{html_escape(_provenance_text(row, "净值来源信息"))}</td>
+          <td>{html_escape(_provenance_text(row, "基准来源信息"))}</td>
+          <td>{row["AI建议"]}</td>
         </tr>
         """
         for row in sorted_rows
@@ -1878,6 +1978,7 @@ def build_html_report(rows: list[dict[str, Any]]) -> str:
     if any(row.get("数据来源") == "模拟数据" for row in sorted_rows):
         names = "、".join(row["基金名称"] for row in sorted_rows if row.get("数据来源") == "模拟数据")
         mock_warning = f'<div class="warning">注意：以下基金使用模拟数据，仅用于流程验证：{names}</div>'
+    portfolio_warning = '<div class="warning">持仓为虚构合成示例，仅演示组合分析流程。</div>' if synthetic_portfolio else ""
 
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -1910,6 +2011,7 @@ def build_html_report(rows: list[dict[str, Any]]) -> str:
   <h1>基金组合可视化报告</h1>
   <div class="muted">生成时间：{summary["generated_at"]}</div>
   <div class="disclaimer">{COMPLIANCE_DISCLOSURE}</div>
+  {portfolio_warning}
   {mock_warning}
   <div class="grid">
     <div class="metric"><p>总持仓金额</p><b>{summary["total_amount"]:.2f}</b></div>
@@ -1917,7 +2019,7 @@ def build_html_report(rows: list[dict[str, Any]]) -> str:
     <div class="metric"><p>最高评分基金</p><b>{summary["best"]["基金名称"]}</b><span>{summary["best"]["综合评分(0-10)"]} 分</span></div>
     <div class="metric"><p>最低风险基金</p><b>{summary["lowest_risk"]["基金名称"]}</b><span>风险控制 {summary["lowest_risk"]["风险控制得分"]}</span></div>
   </div>
-  <section class="table-wrap"><h2>数据表格</h2><table><thead><tr><th>基金</th><th>代码</th><th>类型</th><th>基准</th><th>近1月</th><th>近1年</th><th>超额</th><th>回撤</th><th>评分</th><th>评级</th><th>来源</th><th>建议</th></tr></thead><tbody>{table_rows}</tbody></table></section>
+  <section class="table-wrap"><h2>数据表格</h2><table><thead><tr><th>基金</th><th>代码</th><th>类型</th><th>基准</th><th>近1月</th><th>近1年</th><th>超额</th><th>回撤</th><th>评分</th><th>评级</th><th>来源</th><th>净值数据证据</th><th>基准数据证据</th><th>建议</th></tr></thead><tbody>{table_rows}</tbody></table></section>
   <section class="chart">{bar_html}</section>
   <section class="chart">{scatter_html}</section>
   <section class="chart">{radar_html}</section>
@@ -1945,10 +2047,16 @@ def require_mock_data_confirmation(rows: list[dict[str, Any]]) -> bool:
 
     codes = ",".join(sorted(str(row["代码"]).zfill(6) for row in mock_rows))
     confirm_key = f"mock_data_confirmed_{codes}"
-    st.warning(
-        f"有 {len(mock_rows)} 只基金未能从公开接口获取净值，正在使用模拟数据展示界面流程"
-        "（明细展开见下），不能用于判断基金表现。"
-    )
+    if offline_demo_enabled():
+        st.warning(
+            f"离线演示模式已启用，{len(mock_rows)} 只基金使用合成净值展示界面流程"
+            "（明细展开见下），不能用于判断基金表现。"
+        )
+    else:
+        st.warning(
+            f"有 {len(mock_rows)} 只基金未能从公开接口获取净值，正在使用模拟数据展示界面流程"
+            "（明细展开见下），不能用于判断基金表现。"
+        )
     with st.expander("查看使用模拟数据的基金明细"):
         st.markdown(
             "、".join(f"{row['基金名称']}（{str(row['代码']).zfill(6)}）" for row in mock_rows)
@@ -1998,8 +2106,11 @@ def main() -> None:
         st.session_state.glm_api_key = ""
     if "holdings" not in st.session_state:
         st.session_state.holdings = default_holdings()
+        st.session_state.synthetic_portfolio = True
     else:
         st.session_state.holdings = normalize_holdings(st.session_state.holdings)
+    if "synthetic_portfolio" not in st.session_state:
+        st.session_state.synthetic_portfolio = True
     if "holdings_snapshot_date" not in st.session_state:
         st.session_state.holdings_snapshot_date = default_snapshot_date()
     if "auto_update_holdings" not in st.session_state:
@@ -2059,14 +2170,14 @@ def main() -> None:
     if filtered_rows:
         st.sidebar.download_button(
             "导出 Markdown 报告",
-            data=build_markdown_report(filtered_rows).encode("utf-8-sig"),
+            data=build_markdown_report(filtered_rows, synthetic_portfolio=st.session_state.synthetic_portfolio).encode("utf-8-sig"),
             file_name="fund_report.md",
             mime="text/markdown",
             use_container_width=True,
         )
         st.sidebar.download_button(
             "导出 HTML 可视化报告",
-            data=build_html_report(filtered_rows).encode("utf-8"),
+            data=build_html_report(filtered_rows, synthetic_portfolio=st.session_state.synthetic_portfolio).encode("utf-8"),
             file_name="fund_report_可视化.html",
             mime="text/html",
             use_container_width=True,
@@ -2079,12 +2190,14 @@ def main() -> None:
         st.session_state.refresh_token += 1
         st.rerun()
 
-    st.title("AI 智选基金助手")
-    st.caption("统一应用：数据获取、多维评分、通义千问建议、Markdown/HTML 导出都在本文件内完成。")
+    st.title("AI 智选基金助手 · v0.1.0")
+    st.caption("公开数据分析与组合工程演示；持仓默认使用虚构合成数据。")
     st.info(
         "评分说明：各指标在当前基金池内转换为 0-10 百分位分；收益能力优先看相对比较基准的超额收益；"
         "权重按历史样本 IC/IR 估计，样本不足时回退默认权重。"
     )
+    if st.session_state.synthetic_portfolio:
+        st.warning("当前组合为虚构合成示例，仅用于界面演示与流程验证；请勿将示例金额或收益视作真实账户数据。")
     if auto_update_holdings:
         updated_count = sum(1 for row in rows if row.get("持仓已自动更新"))
         st.success(f"持仓已按 {snapshot_date} 快照净值自动更新到最新净值日期，共更新 {updated_count} 只基金。")
@@ -2100,7 +2213,7 @@ def main() -> None:
     st.subheader("基金数据表格")
     table_df = build_table_df(filtered_rows)
     table_event = st.dataframe(
-        table_df.style.apply(highlight_mock_rows, axis=1),
+        table_df.style.apply(highlight_mock_rows, axis=1).format(na_rep="—"),
         use_container_width=True,
         hide_index=True,
         on_select="rerun",
@@ -2140,6 +2253,8 @@ def main() -> None:
                 <div class="hint-card">
                   <strong>{row["基金名称"]}</strong>
                   <div class="small-muted">类型：{row["基金类型"]} ｜ 基准：{row.get("比较基准", "沪深300")} ｜ 数据来源：{row["数据来源"]} ｜ 最新净值日期：{row["最新净值日期"]}</div>
+                  <div class="small-muted">{html_escape(_provenance_text(row, "净值来源信息"))}</div>
+                  <div class="small-muted">{html_escape(_provenance_text(row, "基准来源信息"))}</div>
                   <div class="small-muted">{row.get("持仓更新说明", "")}</div>
                 </div>
                 """,

@@ -1,0 +1,222 @@
+/* Hallmark · shape: editorial portfolio dashboard · theme: ledger-room · genre: app · v2.0.0 */
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4 · weakest: E, source labels repeat beside each metric to keep the example boundary visible */
+:root {
+  color-scheme: light;
+  --font-body: "Segoe UI", "Microsoft YaHei UI", sans-serif;
+  --color-ink: #282a28;
+  --color-ink-soft: #575c56;
+  --color-muted: #858b82;
+  --color-ground: #f5f3ed;
+  --color-paper: #fbfaf6;
+  --color-paper-raised: #fffefa;
+  --color-line: #e0ded4;
+  --color-line-strong: #c8c5b8;
+  --color-accent: #8c4a34;
+  --color-accent-hover: #713c2b;
+  --color-accent-ink: #fffdf6;
+  --color-accent-soft: #f3e9e2;
+  --color-chart-ink: #477067;
+  --color-chart-secondary: #af7947;
+  --color-focus: #8c4a34;
+  --color-success: #39714d;
+  --color-success-bg: #eaf2e9;
+  --color-warning: #8c632e;
+  --color-warning-bg: #f7eedf;
+  --color-danger: #a4473b;
+  --color-danger-bg: #f8e9e5;
+  --color-live-bg: #eaf2e9;
+  --color-overlay: rgba(32, 34, 31, 0.08);
+  --radius-control: 7px;
+  --radius-panel: 13px;
+  --shadow-panel: 0 1px 2px rgba(53, 48, 35, 0.04);
+  --dur-micro: 120ms;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: var(--color-ground);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+html, body { overflow-x: clip; }
+body { min-width: 340px; color: var(--color-ink); background: var(--color-ground); font-size: 14px; }
+button, input, select { font: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+::selection { color: var(--color-ink); background: var(--color-accent-soft); }
+
+.fund-app { min-height: 100vh; }
+.fund-topbar { min-height: 68px; display: flex; align-items: center; gap: 38px; padding: 0 max(30px, calc((100vw - 1440px) / 2)); border-bottom: 1px solid var(--color-line); background: var(--color-paper); }
+.fund-brand { min-width: 240px; display: inline-flex; align-items: center; gap: 11px; color: inherit; text-decoration: none; }
+.brand-seal { width: 35px; height: 35px; display: grid; place-items: center; color: var(--color-accent); border: 1px solid var(--color-accent); border-radius: 50%; }
+.fund-brand strong { display: block; font-size: 15px; font-weight: 720; line-height: 1.2; }
+.fund-brand small { display: block; margin-top: 3px; color: var(--color-muted); font-size: 11px; }
+.fund-nav { display: flex; align-self: stretch; align-items: center; gap: 24px; }
+.fund-nav-link { min-height: 100%; padding: 0 2px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--color-ink-soft); cursor: pointer; font-size: 12px; }
+.fund-nav-link:hover { color: var(--color-accent); }
+.fund-nav-link.active { border-bottom-color: var(--color-accent); color: var(--color-accent); font-weight: 650; }
+.fund-top-actions { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.local-pill { display: inline-flex; align-items: center; gap: 6px; color: var(--color-muted); font-size: 11px; white-space: nowrap; }
+.fund-icon-button { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid transparent; border-radius: var(--radius-control); background: transparent; color: var(--color-ink-soft); cursor: pointer; }
+.fund-icon-button:hover { color: var(--color-accent); background: var(--color-accent-soft); }
+.fund-page { max-width: 1440px; padding: 31px 30px 17px; margin: 0 auto; }
+.fund-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 19px; }
+.fund-heading h1 { margin: 0; font-size: clamp(26px, 2.4vw, 34px); font-weight: 670; letter-spacing: -0.03em; line-height: 1.16; overflow-wrap: break-word; min-width: 0; }
+.fund-heading p { max-width: 65ch; margin: 7px 0 0; color: var(--color-ink-soft); line-height: 1.5; }
+.fund-breadcrumb { display: flex; align-items: center; gap: 3px; color: var(--color-muted) !important; margin: 0 0 9px !important; font-size: 11px; }
+.fund-heading-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.fund-button { min-height: 37px; display: inline-flex; justify-content: center; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid transparent; border-radius: var(--radius-control); cursor: pointer; font-size: 11px; font-weight: 650; transition: background-color var(--dur-micro) ease-out, border-color var(--dur-micro) ease-out, color var(--dur-micro) ease-out; text-decoration: none; white-space: nowrap; }
+.fund-button:disabled { opacity: .55; cursor: not-allowed; }
+.fund-button.filled { color: var(--color-accent-ink); background: var(--color-accent); border-color: var(--color-accent); }
+.fund-button.filled:hover:not(:disabled) { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+.fund-button.outline { color: var(--color-ink-soft); background: var(--color-paper-raised); border-color: var(--color-line-strong); }
+.fund-button.outline:hover:not(:disabled) { color: var(--color-accent); border-color: var(--color-accent); background: var(--color-accent-soft); }
+.fund-button.small-button { min-height: 34px; }
+.synthetic-banner { min-height: 54px; display: flex; align-items: center; gap: 11px; padding: 9px 13px; margin-bottom: 17px; border: 1px solid var(--color-warning); border-left-width: 3px; background: var(--color-warning-bg); }
+.banner-mark { width: 21px; height: 21px; display: grid; flex: 0 0 auto; place-items: center; border: 1px solid var(--color-warning); border-radius: 50%; color: var(--color-warning); font-size: 12px; font-weight: 700; }
+.synthetic-banner > div { display: grid; gap: 3px; }
+.synthetic-banner strong { color: var(--color-ink); font-size: 12px; }
+.synthetic-banner span { color: var(--color-ink-soft); font-size: 11px; }
+.text-action { margin-left: auto; padding: 7px 9px; border: 0; background: transparent; color: var(--color-accent); cursor: pointer; font-size: 11px; font-weight: 650; }
+.text-action:hover { text-decoration: underline; }
+.fund-alert { min-height: 40px; display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 0 0 16px; border-radius: var(--radius-control); font-size: 11px; }
+.fund-alert button { margin-left: auto; width: 26px; height: 26px; border: 0; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; font-size: 19px; }
+.danger-alert { color: var(--color-danger); background: var(--color-danger-bg); border: 1px solid var(--color-danger); }
+.success-alert { color: var(--color-success); background: var(--color-success-bg); border: 1px solid var(--color-success); }
+.fund-stack { display: grid; gap: 17px; }
+.metric-row, .detail-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--color-paper); box-shadow: var(--shadow-panel); }
+.metric-card { display: grid; align-content: start; gap: 7px; min-width: 0; padding: 17px 20px; border-right: 1px solid var(--color-line); }
+.metric-card:last-child { border-right: 0; }
+.metric-card > span { color: var(--color-muted); font-size: 11px; }
+.metric-card > strong { font-size: clamp(20px, 2vw, 26px); line-height: 1.12; font-weight: 660; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.metric-card > small { color: var(--color-muted); font-size: 10px; line-height: 1.4; }
+.metric-card .value-positive { color: var(--color-chart-ink); }
+.metric-card .value-negative { color: var(--color-danger); }
+.overview-panels { display: grid; grid-template-columns: minmax(300px, .8fr) minmax(0, 1.2fr); gap: 17px; }
+.fund-panel { min-width: 0; padding: 19px; border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--color-paper-raised); box-shadow: var(--shadow-panel); }
+.panel-title h2 { margin: 0; font-size: 15px; font-weight: 660; line-height: 1.35; }
+.panel-title p { margin: 4px 0 0; color: var(--color-muted); font-size: 11px; line-height: 1.45; }
+.table-panel { padding-bottom: 8px; }
+.table-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 14px; }
+.filters { display: flex; align-items: center; gap: 7px; }
+.filters select, .search-box input, .detail-selectors select, .key-form select, .key-form input { min-height: 35px; padding: 7px 9px; border: 1px solid var(--color-line-strong); border-radius: var(--radius-control); color: var(--color-ink); background: var(--color-paper-raised); font-size: 11px; }
+.search-box { display: flex; align-items: center; gap: 5px; padding-left: 8px; border: 1px solid var(--color-line-strong); border-radius: var(--radius-control); color: var(--color-muted); }
+.search-box input { min-width: 170px; border: 0; outline-offset: -2px; }
+.table-overflow { overflow-x: auto; }
+.fund-table, .holdings-table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
+.fund-table th, .holdings-table th { padding: 10px 9px; border-bottom: 1px solid var(--color-line-strong); color: var(--color-muted); font-size: 10px; font-weight: 620; }
+.fund-table td, .holdings-table td { padding: 11px 9px; border-bottom: 1px solid var(--color-line); font-size: 11px; }
+.fund-table tbody tr { cursor: pointer; }
+.fund-table tbody tr:hover { background: var(--color-ground); }
+.fund-table tbody tr.selected-row { background: var(--color-accent-soft); }
+.fund-table td:first-child strong { display: block; max-width: 245px; overflow: hidden; text-overflow: ellipsis; font-size: 11px; font-weight: 630; }
+.fund-table td:first-child small { display: block; margin-top: 4px; color: var(--color-muted); font-size: 10px; }
+.return-up { color: var(--color-chart-ink); font-variant-numeric: tabular-nums; }
+.return-down { color: var(--color-danger); font-variant-numeric: tabular-nums; }
+.source-badge { display: inline-flex; align-items: center; min-height: 22px; padding: 3px 7px; border-radius: 5px; font-size: 9px; font-weight: 650; white-space: nowrap; }
+.source-badge.simulated { color: var(--color-warning); background: var(--color-warning-bg); }
+.source-badge.unavailable { color: var(--color-danger); background: var(--color-danger-bg); }
+.source-badge.live { color: var(--color-success); background: var(--color-live-bg); }
+.holdings-editor { display: grid; gap: 12px; padding: 14px 0 16px; margin-bottom: 14px; border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); }
+.editor-heading { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.editor-heading strong { font-size: 12px; }
+.editor-heading span { color: var(--color-muted); font-size: 10px; }
+.holdings-table input { min-width: 80px; min-height: 32px; }
+.editor-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.fund-select-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px; }
+.detail-selectors { display: flex; align-items: center; gap: 14px; }
+.detail-selectors select { min-width: 230px; }
+.period-switch { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--color-line); border-radius: 8px; background: var(--color-ground); }
+.period-button { min-height: 29px; padding: 0 9px; border: 0; border-radius: 6px; background: transparent; color: var(--color-ink-soft); cursor: pointer; font-size: 10px; }
+.period-button:hover { color: var(--color-accent); }
+.period-button.active { color: var(--color-accent-ink); background: var(--color-accent); }
+.history-panel { padding-bottom: 12px; }
+.chart-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 8px; }
+.chart-empty { min-height: 115px; display: grid; place-items: center; color: var(--color-muted); font-size: 11px; }
+.chart-loading-frame { min-width: 0; }
+.chart-loading { min-height: 90px; display: grid; place-items: center; color: var(--color-muted); background: var(--color-ground); font-size: 10px; }
+.unavailable-note { display: flex; align-items: center; gap: 7px; padding: 9px 10px; margin-top: 6px; color: var(--color-warning); background: var(--color-warning-bg); font-size: 10px; }
+.analysis-bottom, .sources-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 17px; align-items: start; }
+.provenance-panel, .advice-panel { display: grid; gap: 12px; align-content: start; }
+.provenance-card { display: grid; gap: 5px; padding: 11px 0; border-top: 1px solid var(--color-line); color: var(--color-ink-soft); font-size: 10px; }
+.provenance-card > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.provenance-card strong { color: var(--color-ink); font-size: 11px; font-weight: 620; }
+.provenance-card small { color: var(--color-warning); font-size: 10px; line-height: 1.45; overflow-wrap: anywhere; }
+.provenance-card.compact { padding: 9px 0; }
+.provenance-card.compact > div strong { max-width: 72%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.key-form { display: grid; grid-template-columns: .8fr 1.2fr; align-items: end; gap: 8px; }
+.key-form label { display: grid; gap: 5px; color: var(--color-muted); font-size: 10px; }
+.key-form .fund-button { grid-column: 1 / -1; justify-self: end; }
+.advice-result { display: grid; gap: 8px; padding-top: 13px; border-top: 1px solid var(--color-line); }
+.advice-mode { display: flex; align-items: center; justify-content: space-between; color: var(--color-muted); font-size: 10px; }
+.advice-result > strong { color: var(--color-ink); font-size: 12px; line-height: 1.5; }
+.advice-result p { margin: 0; color: var(--color-ink-soft); font-size: 11px; line-height: 1.65; white-space: pre-line; }
+.advice-result > small { color: var(--color-muted); font-size: 9px; line-height: 1.5; }
+.source-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--color-paper); }
+.source-overview > div { display: grid; gap: 6px; min-width: 0; padding: 16px 19px; border-right: 1px solid var(--color-line); }
+.source-overview > div:last-child { border-right: 0; }
+.source-overview span, .source-overview small { color: var(--color-muted); font-size: 10px; }
+.source-overview strong { overflow-wrap: anywhere; font-size: 16px; font-weight: 650; }
+.method-list { display: grid; margin-top: 16px; }
+.method-list > div { padding: 11px 0; border-top: 1px solid var(--color-line); }
+.method-list strong { font-size: 11px; }
+.method-list p { margin: 5px 0 0; color: var(--color-ink-soft); font-size: 10px; line-height: 1.55; }
+.compliance-box { padding: 11px; margin-top: 13px; border-left: 3px solid var(--color-accent); background: var(--color-ground); color: var(--color-ink-soft); font-size: 10px; line-height: 1.55; }
+.fund-loading, .fund-empty { min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; color: var(--color-muted); text-align: center; }
+.fund-empty strong { color: var(--color-ink); font-size: 14px; }
+.fund-empty span { font-size: 11px; }
+.fund-empty .fund-button { margin-top: 7px; }
+.fund-footer { display: flex; justify-content: space-between; gap: 18px; padding: 19px 2px 4px; color: var(--color-muted); font-size: 9px; }
+
+@media (max-width: 1100px) {
+  .fund-topbar { gap: 20px; padding-right: 20px; padding-left: 20px; }
+  .fund-brand { min-width: 190px; }
+  .fund-page { padding-right: 20px; padding-left: 20px; }
+  .table-toolbar { align-items: flex-start; flex-direction: column; }
+  .filters { width: 100%; flex-wrap: wrap; }
+  .overview-panels { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+  .detail-selectors { align-items: flex-end; flex-direction: column; }
+}
+@media (max-width: 800px) {
+  .fund-topbar { min-height: 63px; flex-wrap: wrap; padding-top: 8px; }
+  .fund-brand { flex: 1; }
+  .fund-nav { order: 3; width: 100%; height: 42px; gap: 18px; overflow-x: auto; }
+  .fund-nav-link { min-height: 42px; white-space: nowrap; }
+  .fund-heading { align-items: flex-start; flex-direction: column; }
+  .fund-heading-actions { width: 100%; }
+  .metric-row, .detail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-card:nth-child(2) { border-right: 0; }
+  .metric-card:nth-child(-n+2) { border-bottom: 1px solid var(--color-line); }
+  .overview-panels, .analysis-bottom, .sources-grid { grid-template-columns: minmax(0, 1fr); }
+  .fund-select-panel { grid-template-columns: minmax(0, 1fr); }
+  .detail-selectors { align-items: stretch; flex-direction: column; }
+  .period-switch { justify-content: space-between; overflow-x: auto; }
+  .period-button { flex: 1; white-space: nowrap; }
+  .source-overview { grid-template-columns: minmax(0, 1fr); }
+  .source-overview > div { border-right: 0; border-bottom: 1px solid var(--color-line); }
+  .source-overview > div:last-child { border-bottom: 0; }
+}
+@media (max-width: 560px) {
+  .fund-topbar { padding-right: 12px; padding-left: 12px; }
+  .fund-page { padding: 22px 12px 14px; }
+  .fund-heading h1 { font-size: 25px; }
+  .fund-heading-actions { align-items: stretch; flex-wrap: wrap; }
+  .fund-heading-actions .fund-button { flex: 1; }
+  .synthetic-banner { align-items: flex-start; }
+  .text-action { padding: 4px 0; }
+  .fund-panel { padding: 14px; }
+  .metric-card { padding: 13px; }
+  .metric-card > strong { font-size: 21px; }
+  .search-box { flex: 1 1 170px; }
+  .search-box input { min-width: 0; }
+  .filters select { flex: 1; }
+  .detail-selectors select { min-width: 0; }
+  .key-form { grid-template-columns: minmax(0, 1fr); }
+  .key-form .fund-button { grid-column: auto; justify-self: stretch; }
+  .editor-heading { align-items: flex-start; flex-direction: column; }
+  .editor-actions { flex-wrap: wrap; }
+  .fund-footer { flex-direction: column; gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

@@ -1,96 +1,104 @@
-
 # AI 智选基金助手
 
-> 基于 Streamlit 和通义千问的个人基金投资分析系统  
-> 自动抓取净值数据，多维度量化评分，AI 生成投资建议，一站式交互看板
+**v0.2.0 开发版 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
 
-## ✨ 主要功能
+把组合表现、风险指标、基金明细和数据来源放进一套本地分析工作台。Python 继续负责净值处理、指标计算与 AI 回退；浏览器只呈现本机 API 返回的分析结果。
 
-- 📈 **自动数据抓取**：支持 AkShare / 东方财富双数据源，自动重试与降级（模拟数据兜底）
-- 🧮 **多维度评分模型**：参考晨星体系，五维度加权（收益能力30%、风险控制25%、风险调整收益25%、稳定性10%、相对排名10%），输出 0–10 分与晨星评级
-- 🤖 **AI 投资建议**：调用通义千问大模型（兼容 OpenAI API），同时生成简短建议与结构化详细分析（趋势判断、操作建议、风险提示、适合人群），API 不可用时自动降级为本地规则
-- 📊 **交互看板**：Streamlit 构建，支持基金筛选、收益-回撤散点图、五维雷达图、定投回测模拟器
-- 📄 **报告导出**：一键导出 Markdown 文本报告与 HTML 可视化报告
+![基金观察工作台：离线演示中的合成组合、收益风险视图和来源标签](docs/screenshots/app_v0.2.0.png)
 
-## 🚀 快速开始
+> 截图于 2026-11-09 从 FastAPI 本地服务生成。持仓是虚构合成样例，净值标为模拟数据；由于区间不足一年，近一年收益明确显示为不可用，基准比较也不可用。截图仅展示界面和数据来源呈现。
 
-### 1. 克隆仓库
-```bash
-git clone https://github.com/你的用户名/AI-Fund-Assistant.git
-cd AI-Fund-Assistant
+[观看 7 秒工作台交互演示（WebM）](docs/screenshots/demo-v0.2.0.webm) · 使用离线合成数据，无真实账户或投资数据。
+
+## 能力与验证
+
+- **组合总览**：持仓金额、累计收益、基金数量、组合评分、结构图和可筛选持仓表。
+- **绩效与风险**：收益、回撤、波动率和净值历史；缺失或样本不足的指标显示不可用，不用零值代替。
+- **来源说明**：基金净值和基准分别记录来源、数据日期、回退状态与失败原因，并显示在页面和 Markdown / HTML 报告中。
+- **Python 核心**：继续复用既有数据加载、净值标准化、风险计算、相对评分和 AI 文本生成逻辑。
+- **本地 AI 回退**：无密钥时使用本地规则并显示模式与免责声明；有密钥时只随当前建议请求传递，不落盘、不写日志。
+- **验证证据**：测试覆盖公开数据源响应和异常、无效净值、回退、收益与回撤、离线不联网、报告标识和 API 行为；前端包含单测与浏览器流程测试。
+
+默认持仓是合成数据，不连接真实账户、不提交交易，也不提供投资建议。离线模拟净值只用于演示产品流程；任何图表、评分、收益数字或 AI 文本都不能视为投资结论。
+
+## 本地启动
+
+需要 Windows、Python 3.12、Node.js 24 LTS 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。克隆仓库后，在 PowerShell 执行：
+
+```powershell
+git clone https://github.com/MAHONGHAO1/AI-Fund-Management-Platform.git
+cd AI-Fund-Management-Platform
+py -3.12 -m pip install uv
+uv sync --locked
+Push-Location frontend
+npm ci
+npm run build
+Pop-Location
+$env:FUND_OFFLINE_DEMO = "true"
+uv run --locked python -m fund_web
 ```
 
-### 2. 安装依赖
-```bash
-pip install -r requirements.txt
-```
-如需启用 AkShare 数据源，可额外安装：
-```bash
-pip install akshare
-```
+服务只监听本机。默认使用离线演示数据，确保合成持仓、模拟净值和不可用基准的展示可重复；启动后在浏览器打开 [http://127.0.0.1:8766](http://127.0.0.1:8766)。也可在安装好 Node.js 24 LTS 与 uv 后双击 `启动基金助手.cmd`；启动脚本会用 `npm ci` 安装锁定前端依赖、构建页面并启动 FastAPI。它不会自动打开浏览器。
 
-### 3. 运行应用
-```bash
-streamlit run ai_investment_advisor.py
+如需开发热更新，可在一个终端运行 `uv run --locked python -m fund_web`，再在另一个终端运行：
+
+```powershell
+cd frontend
+npm ci
+npm run dev
 ```
 
-浏览器将自动打开 `http://localhost:8501`。
+Vite 开发页面地址为 `http://127.0.0.1:5173`，API 请求转发到本机 8766 端口。
 
-### 4. （可选）配置通义千问 API Key
-- 在侧边栏「设置」中输入你的 `DASHSCOPE_API_KEY`，即可启用真实 AI 建议
-- 不配置时自动使用本地 mock 建议，不影响核心功能
+### 离线作品演示
 
-## ☁️ 部署到 Streamlit Cloud
+离线模式下，应用不请求公开净值数据源，页面会分别标记合成持仓和模拟净值；无 API Key 时继续使用本地建议回退。启动脚本默认打开该模式；手工启动后端时也应设置：
 
-1. 将 `ai_investment_advisor.py`、`requirements.txt`、`README.md` 推送到 GitHub 仓库根目录。
-2. 在 Streamlit Cloud 新建应用，入口文件选择 `ai_investment_advisor.py`。
-3. Python 版本建议选择 `3.12`。
-4. 如需云端启用通义千问，在应用的 Secrets 中添加：
-```toml
-DASHSCOPE_API_KEY = "你的 API Key"
+```powershell
+$env:FUND_OFFLINE_DEMO = "true"
+.\启动基金助手.cmd
 ```
 
-## 🧱 技术栈
+若要检查公开数据源及其回退流程，把变量设为 `false` 后再启动。该设置只影响当前终端启动的进程。
 
-- **前端/交互**：Streamlit, Plotly
-- **数据处理**：Pandas, NumPy, Requests
-- **数据源**：AkShare, 东方财富公开接口
-- **AI 模型**：通义千问（qwen-plus / qwen-max），兼容 OpenAI SDK
-- **语言**：Python 3.12+
+## 测试与锁定依赖
 
-## 📂 文件结构
+使用与 GitHub Actions 相同的 Python 3.12、Node.js 24 和锁定文件：
 
+```powershell
+uv sync --locked
+uv run --locked python -m pytest -q
+Push-Location frontend
+npm ci
+npm test
+npx playwright install chromium
+npm run test:e2e
+npm run build
+Pop-Location
 ```
-.
-├── ai_investment_advisor.py   # 主程序（含所有功能）
-├── requirements.txt           # Streamlit Cloud 构建依赖
-├── README.md                  # 本文件
-└── output/                    # 生成的报告默认保存在桌面
+
+本机验收环境为 Python 3.12.10 / Node.js 24.15.0；Python 测试 19 项通过，前端单测与浏览器关键流程通过，`npm ci` 安全审计为 0 项漏洞。CI 使用合成响应，不依赖外网基金数据。
+
+## 架构
+
+```mermaid
+flowchart LR
+  UI[React + TypeScript 工作台] -->|同源 /api| API[FastAPI · 127.0.0.1:8766]
+  API --> CORE[Python 分析服务]
+  CORE --> DATA[东方财富 / AkShare / 离线合成数据]
+  CORE --> METRICS[收益、回撤、风险与相对评分]
+  CORE --> AI[当前请求的 AI 文本或本地回退]
+  CORE --> REPORT[Markdown / HTML 报告]
 ```
 
-## 📝 注意事项
+## 文档与发布状态
 
-- 数据均来自公开接口，仅供个人学习与研究，不构成投资建议。
-- 部署到 Streamlit Cloud 时，依赖必须写入 `requirements.txt`，不要在应用运行时自动安装。
-- 部分基金接口有访问频率限制，代码已内置重试与降级机制。
-- 如需长期使用，建议申请自己的通义千问 API Key（免费额度足够个人使用）。
+- [数据来源与计算状态](docs/STATUS_v0.2.0.md)
+- [v0.2.0 Release Notes 草稿](RELEASE_NOTES_v0.2.0.md)
+- [变更记录](CHANGELOG.md)
 
-## 🛠️ 未来计划
+当前工作仍在 v0.2.0 功能分支上；GitHub PR、合并和正式 Release 按审阅流程另行处理。
 
-- [ ] 支持更多基金数据源（天天基金、蛋卷等）
-- [ ] 增加组合优化建议（基于均值-方差模型）
-- [ ] 支持多账户持仓对比
-- [ ] 部署到 Streamlit Cloud 提供在线演示
+## English
 
-
-## 👤 作者
-
-麻洪豪  
-- 邮箱：3438519642@qq.com  
-
-## 🙏 致谢
-
-- [AkShare](https://www.akshare.xyz/) 提供金融数据接口
-- [Streamlit](https://streamlit.io/) 提供便捷的 Web 应用框架
-- 通义千问提供大模型能力
-```
+A local portfolio analytics demo with a React and TypeScript frontend, a loopback-only FastAPI bridge, and Python analysis logic. It records NAV and benchmark provenance, labels synthetic holdings and simulated NAV, and keeps benchmark comparisons unavailable when the data does not support them. No account connection, trading, or investment advice is provided.
