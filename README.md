@@ -1,6 +1,6 @@
 # AI 智选基金助手
 
-**v0.2.0 开发版 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
+**v0.2.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
 
 把组合表现、风险指标、基金明细和数据来源放进一套本地分析工作台。Python 继续负责净值处理、指标计算与 AI 回退；浏览器只呈现本机 API 返回的分析结果。
 
