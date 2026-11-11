@@ -96,10 +96,10 @@ flowchart LR
 ## 文档与发布状态
 
 - [数据来源与计算状态](docs/STATUS_v0.2.0.md)
-- [v0.2.0 Release Notes 草稿](RELEASE_NOTES_v0.2.0.md)
+- [v0.2.0 发布说明](RELEASE_NOTES_v0.2.0.md)
 - [变更记录](CHANGELOG.md)
 
-当前工作仍在 v0.2.0 功能分支上；GitHub PR、合并和正式 Release 按审阅流程另行处理。
+v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.0)；两个项目的在线展示见[作品集展示页](https://mahonghao1.github.io/Embodied-AI-Data-Processing-Platform/)。
 
 ## English
 
