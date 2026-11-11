@@ -1,6 +1,6 @@
 # AI 智选基金助手
 
-**v0.2.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
+**v0.2.1 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
 
 在线作品集展示页（无需安装即可查看两个项目的真实截图、验收证据与能力边界）：https://mahonghao1.github.io/Embodied-AI-Data-Processing-Platform/
 
@@ -11,6 +11,28 @@
 > 截图于 2026-11-09 从 FastAPI 本地服务生成。持仓是虚构合成样例，净值标为模拟数据；由于区间不足一年，近一年收益明确显示为不可用，基准比较也不可用。截图仅展示界面和数据来源呈现。
 
 [观看 7 秒工作台交互演示（WebM）](docs/screenshots/demo-v0.2.0.webm) · 使用离线合成数据，无真实账户或投资数据。
+
+## 界面一览
+
+三个视角分别回答「组合长什么样」「图表加载完成后是什么状态」「数据究竟从哪来」。全部为本机实际运行截图，取自离线合成演示模式，未补画、未修饰。
+
+![组合总览加载完成态：持仓结构环形图与分类图例](docs/screenshots/fund-overview-v0.2.0.png)
+
+> 组合总览加载完成状态。顶部橙色横幅始终标注「当前组合为虚构合成示例」；近一年收益与基准比较明确显示不可用，空值不会被画成 0.00%。
+
+![数据来源与计算口径：逐只基金的净值来源、日期与回退状态](docs/screenshots/fund-provenance-v0.2.0.png)
+
+> 数据来源与计算口径页。每只基金分别标出净值来源（东方财富 / AkShare / 模拟数据）、数据日期与回退状态；右侧同时列出计算口径与能力边界。
+
+| 视角 | 查看 | 说明 |
+| --- | --- | --- |
+| 组合总览（含空状态） | [截图](docs/screenshots/app_v0.2.0.png) | 合成组合提示、四项指标、不可用的近一年收益 |
+| 7 秒界面演示 | [WebM 视频](docs/screenshots/demo-v0.2.0.webm) | 指标卡、图表与视图切换的交互过程 |
+| 旧版界面（历史 v0.1.0） | [截图](docs/screenshots/app_v0.1.0.png) | 早期界面，仅作迭代对照 |
+
+## 为什么单独做这个项目
+
+验证「把数据来源写进界面」这件事。真实净值、AkShare 回退、模拟净值、离线演示四条路径都在页面和报告里留痕；当区间不足一年、基准不可比或数据源失败时，界面说「不可用」，而不是给出一个好看但无依据的数字。Python 负责净值标准化、风险计算与报告生成，浏览器只呈现本机 API 的返回结果。
 
 ## 能力与验证
 
@@ -96,11 +118,12 @@ flowchart LR
 ## 文档与发布状态
 
 - [数据来源与计算状态](docs/STATUS_v0.2.0.md)
+- [v0.2.1 发布说明](RELEASE_NOTES_v0.2.1.md)
 - [v0.2.0 发布说明](RELEASE_NOTES_v0.2.0.md)
 - [变更记录](CHANGELOG.md)
 
-v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.0)；两个项目的在线展示见[作品集展示页](https://mahonghao1.github.io/Embodied-AI-Data-Processing-Platform/)。
+v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.0)；v0.2.1 在功能代码不变的前提下补齐界面截图、图集与介绍，发布为 [v0.2.1 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.1)。两个项目的在线展示见[作品集展示页](https://mahonghao1.github.io/Embodied-AI-Data-Processing-Platform/)。
 
 ## English
 
-A local portfolio analytics demo with a React and TypeScript frontend, a loopback-only FastAPI bridge, and Python analysis logic. It records NAV and benchmark provenance, labels synthetic holdings and simulated NAV, and keeps benchmark comparisons unavailable when the data does not support them. No account connection, trading, or investment advice is provided.
+A local portfolio analytics demo with a React and TypeScript frontend, a loopback-only FastAPI bridge, and Python analysis logic. It records NAV and benchmark provenance, labels synthetic holdings and simulated NAV, and keeps benchmark comparisons unavailable when the data does not support them. No account connection, trading, or investment advice is provided. v0.2.1 adds verified UI screenshots and a fuller walkthrough without changing the application code.
