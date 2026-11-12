@@ -66,6 +66,7 @@ function App() {
   const [provider, setProvider] = useState<'glm' | 'dashscope'>('glm');
   const [apiKey, setApiKey] = useState('');
   const [advice, setAdvice] = useState<Advice | null>(null);
+  const [inspectorHidden, setInspectorHidden] = useState(false);
 
   const load = async (selectCode?: string) => {
     setLoading(true); setError('');
@@ -165,15 +166,25 @@ function App() {
   const sourceCounts = analysis?.summary.source_counts || {};
   const synthetic = portfolio?.synthetic ?? true;
 
-  return <div className="fund-app">
+  return <div className={inspectorHidden ? 'fund-app no-inspector' : 'fund-app'}>
     <header className="fund-topbar">
       <a className="fund-brand" href="/?view=portfolio" onClick={(event) => { event.preventDefault(); go('portfolio'); }}>
-        <span className="brand-seal"><BarChart3 size={19} /></span>
+        <span className="brand-seal"><BarChart3 size={17} /></span>
         <span><strong>基金观察</strong><small>本地组合分析</small></span>
       </a>
-      <nav className="fund-nav" aria-label="主导航">{(Object.keys(views) as ViewKey[]).map((key) => <button key={key} className={view === key ? 'fund-nav-link active' : 'fund-nav-link'} onClick={() => go(key)}>{views[key]}</button>)}</nav>
-      <div className="fund-top-actions"><span className="local-pill"><ShieldCheck size={15} />仅本机</span><button className="fund-icon-button" aria-label="刷新净值" onClick={() => void refreshData()}><RefreshCw size={17} /></button></div>
+      <span className="shell-crumb">我的分析 <ChevronRight size={13} /> {views[view]}</span>
+      {synthetic && <span className="shell-chip demo">离线演示 · 虚构合成组合</span>}
+      <span className="shell-chip">{analysis?.summary.as_of ? `数据日期 ${analysis.summary.as_of}` : '数据日期不可用'}</span>
+      <div className="fund-top-actions"><button className="shell-toggle" onClick={() => setInspectorHidden(!inspectorHidden)}>{inspectorHidden ? '展开检视' : '收起检视'}</button><span className="local-pill"><ShieldCheck size={15} />仅本机</span><button className="fund-icon-button" aria-label="刷新净值" onClick={() => void refreshData()}><RefreshCw size={17} /></button></div>
     </header>
+
+    <aside className="sidenav">
+      <div className="nav-group">工作区</div>
+      <nav className="fund-nav" aria-label="主导航">{(Object.keys(views) as ViewKey[]).map((key) => <button key={key} className={view === key ? 'fund-nav-link active' : 'fund-nav-link'} onClick={() => go(key)}>{views[key]}</button>)}</nav>
+      <div className="nav-group">视图</div>
+      <div className="nav-meta">{analysis ? <>{analysis.summary.fund_count} 只基金<br />{Object.entries(sourceCounts).map(([key, count]) => `${key} ${count}`).join(' · ') || '来源读取中'}<br />数据日期 {analysis.summary.as_of || '不可用'}</> : '正在读取分析结果'}</div>
+      <div className="nav-foot">固定布局 · 局部滚动<br />缺失指标一律显示不可用<br />不以零值代替空数据<br />仅本机运行，不提供公网服务</div>
+    </aside>
 
     <main className="fund-page">
       <section className="fund-heading">
@@ -193,8 +204,8 @@ function App() {
             <Metric label="组合平均评分" value={analysis.summary.average_score?.toFixed(1) || '不可用'} note="基金池内相对评分" />
           </div>
           <div className="overview-panels">
-            <section className="fund-panel allocation-panel"><PanelTitle title="持仓结构" note="按当前示例持仓金额汇总" /><CardChart option={allocationOption} height={265} /></section>
-            <section className="fund-panel performance-panel"><PanelTitle title="基金近一年收益" note="数据不足一年或使用模拟净值时，指标显示不可用" />{(analysis.rows || []).some((row) => valueNumber(row.近1年收益率) !== null) ? <CardChart option={returnsOption} height={265} /> : <div className="chart-empty" role="status">近一年收益不可用：当前数据没有覆盖完整的一年区间。</div>}</section>
+            <section className="fund-panel allocation-panel"><PanelTitle title="持仓结构" note="按当前示例持仓金额汇总" /><CardChart option={allocationOption} height={212} /></section>
+            <section className="fund-panel performance-panel"><PanelTitle title="基金近一年收益" note="数据不足一年或使用模拟净值时，指标显示不可用" />{(analysis.rows || []).some((row) => valueNumber(row.近1年收益率) !== null) ? <CardChart option={returnsOption} height={212} /> : <div className="chart-empty" role="status"><div className="unavailable-detail"><strong>近一年收益不可用：当前数据没有覆盖完整的一年区间。</strong><div className="insp-row"><span>模拟净值</span><span className="spacer" /><span className="insp-v">逐只标记</span></div><div className="insp-row"><span>比较基准</span><span className="spacer" /><span className="insp-v">不生成</span></div><div className="insp-row"><span>超额收益</span><span className="spacer" /><span className="insp-v">不计算</span></div><small>缺失指标保持显示「不可用」，不以零值替代。</small></div></div>}</section>
           </div>
           <section className="fund-panel table-panel">
             <div className="table-toolbar"><PanelTitle title="持有基金" note="选择一行查看绩效、来源和计算说明" /><div className="filters"><label className="search-box"><Search size={15} /><input aria-label="搜索基金" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索名称或代码" /></label><select aria-label="基金类型筛选" value={fundType} onChange={(event) => setFundType(event.target.value)}><option>全部</option>{[...new Set(analysis.rows.map((row) => row.基金类型))].filter(Boolean).map((item) => <option key={item}>{item}</option>)}</select><button className="fund-button outline small-button" onClick={() => setEditing(!editing)}><Settings2 size={14} />{editing ? '收起编辑' : '编辑持仓'}</button></div></div>
@@ -202,7 +213,7 @@ function App() {
               <div className="table-overflow"><table className="holdings-table"><thead><tr><th>基金</th><th>代码</th><th>持有金额</th><th>持有收益率 %</th><th>累计收益</th></tr></thead><tbody>{draftHoldings.map((holding, index) => <tr key={`${holding.code}-${index}`}><td><input value={holding.name} onChange={(event) => updateDraft(index, 'name', event.target.value)} /></td><td><input value={holding.code} onChange={(event) => updateDraft(index, 'code', event.target.value)} /></td><td><input type="number" min="0" value={holding.amount} onChange={(event) => updateDraft(index, 'amount', event.target.value)} /></td><td><input type="number" value={holding.hold_ret} onChange={(event) => updateDraft(index, 'hold_ret', event.target.value)} /></td><td><input type="number" value={holding.cum_profit} onChange={(event) => updateDraft(index, 'cum_profit', event.target.value)} /></td></tr>)}</tbody></table></div>
               <div className="editor-actions"><button className="fund-button outline" onClick={() => setDraftHoldings([...draftHoldings, { code: '', name: '', amount: 0, hold_ret: 0, cum_profit: 0 }])}>添加一行</button><button className="fund-button outline" disabled={busy} onClick={() => void resetPortfolio()}>恢复示例</button><button className="fund-button filled" disabled={busy} onClick={() => void savePortfolio()}>保存到本次运行</button></div>
             </div>}
-            <FundTable rows={filteredRows} selectedCode={selectedCode} onSelect={(row) => { chooseFund(row); go('analysis', row.代码); }} />
+            <FundTable rows={filteredRows} selectedCode={selectedCode} onSelect={(row) => chooseFund(row)} />
           </section>
         </section>}
 
@@ -243,6 +254,59 @@ function App() {
       </>}
       <footer className="fund-footer"><span>基金观察 · 本地分析演示</span><span>不连接真实账户 · 不提供交易执行或投资建议</span></footer>
     </main>
+
+    <aside className="inspector">
+      <div className="insp-h"><strong>基金明细</strong><span className="insp-chip">点击表格行切换</span></div>
+      <div className="insp-body">
+        <div><div className="insp-t">组合上下文</div>
+          <dl className="insp-kv">
+            <dt>基金数量</dt><dd>{analysis?.summary.fund_count ?? '—'}</dd>
+            <dt>持仓金额</dt><dd>{formatMoney(analysis?.summary.total_amount)}</dd>
+            <dt>累计收益</dt><dd>{formatMoney(analysis?.summary.total_profit)}</dd>
+            <dt>数据日期</dt><dd>{analysis?.summary.as_of || '不可用'}</dd>
+            <dt>组合类型</dt><dd>{synthetic ? '合成示例' : '本次会话自定义'}</dd>
+          </dl>
+        </div>
+        {selectedRow && <div><div className="insp-t">当前选中 · {selectedRow.代码}</div>
+          <dl className="insp-kv">
+            <dt>净值日期</dt><dd>{selectedRow.最新净值日期 || '不可用'}</dd>
+            <dt>数据来源</dt><dd>{selectedRow.数据来源 || '不可用'}</dd>
+            <dt>近一年收益</dt><dd>{formatPercent(selectedRow.近1年收益率)}</dd>
+            <dt>最大回撤</dt><dd>{formatPercent(selectedRow.近1年最大回撤)}</dd>
+            <dt>持有金额</dt><dd>{formatMoney(selectedRow.当前持有金额)}</dd>
+            <dt>相对评分</dt><dd>{valueNumber(selectedRow['综合评分(0-10)'])?.toFixed(1) || '不可用'} / 10</dd>
+          </dl>
+          <button className="fund-button outline small-button" style={{ marginTop: 9 }} onClick={() => go('analysis', selectedRow.代码)}>查看收益与风险</button>
+        </div>}
+        <div><div className="insp-t">来源回退状态</div>
+          <dl className="insp-kv">
+            <dt>请求源</dt><dd>{String(selectedRow?.净值来源信息?.requested_source || '未记录')}</dd>
+            <dt>生效源</dt><dd>{String(selectedRow?.净值来源信息?.source || '未知')}</dd>
+            <dt>数据日期</dt><dd>{String(selectedRow?.净值来源信息?.data_date || '不可用')}</dd>
+            <dt>回退状态</dt><dd>{String(selectedRow?.净值来源信息?.fallback_status || 'none')}</dd>
+          </dl>
+          {selectedRow?.净值来源信息?.failure_reason && <p className="insp-warn">失败原因：{String(selectedRow.净值来源信息.failure_reason)}</p>}
+        </div>
+        <div><div className="insp-t">计算口径与边界</div>
+          <p className="insp-warn">收益率按可得净值区间计算；区间不足时显示不可用。基准与超额收益在模拟数据下不生成。评分是相对排序，不是收益预测。</p>
+        </div>
+        <div><div className="insp-t">接口与凭据</div>
+          <dl className="insp-kv">
+            <dt>API Key</dt><dd>不落盘 · 不写日志</dd>
+            <dt>交易</dt><dd>不执行</dd>
+            <dt>投资建议</dt><dd>不提供</dd>
+            <dt>服务范围</dt><dd>127.0.0.1</dd>
+          </dl>
+        </div>
+        <p className="insp-note">数值沿用本机服务返回的分析结果。缺失数据一律标注不可用，不用零值替代；空值不画成 0.00%。</p>
+      </div>
+    </aside>
+
+    <footer className="statusbar">
+      <span><b>不可用字段保持显示：</b>近一年收益与基准比较在区间不足或模拟净值下显示「不可用」，不以零值替代。</span>
+      <span className="spacer" />
+      <span>{filteredRows.length} / {analysis?.rows.length || 0} 条 · 行高 32px · 固定表头</span>
+    </footer>
   </div>;
 }
 

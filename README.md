@@ -1,6 +1,6 @@
 # AI 智选基金助手
 
-**v0.2.1 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
+**v0.3.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
 
 在线作品集展示页（无需安装即可查看两个项目的真实截图、验收证据与能力边界）：https://mahonghao1.github.io/Embodied-AI-Data-Processing-Platform/
 
@@ -12,9 +12,31 @@
 
 [观看 7 秒工作台交互演示（WebM）](docs/screenshots/demo-v0.2.0.webm) · 使用离线合成数据，无真实账户或投资数据。
 
+## v0.3.0 · 16:9 固定工作台
+
+界面从「窄栏长页」重做为**一屏闭环的固定工作台**：顶栏 48px、侧栏 216px、主区自适应、检视面板 320px、底部口径状态条 34px。整页不再滚动，只有主区与检视面板局部滚动；在 1920×1080 下 KPI、四张卡片、10 行持仓表与右侧检视全部同屏可见。
+
+![v0.3.0 基金工作台：固定 Shell、KPI 四卡、全宽持仓表、右侧检视与底部口径状态条](docs/screenshots/app_v0.3.0.png)
+
+> 2026-11-11 从本机 FastAPI 离线演示服务（同源托管构建后的 `frontend/dist`）生成。近一年收益与基准比较明确显示「不可用」，不以 0.00% 代替；右侧检视列出净值来源、回退状态与计算口径。
+
+![v0.3.0 绩效分析视图：净值走势、数据来源、AI 辅助说明与右侧检视同屏](docs/screenshots/app_v0.3.0-analysis.png)
+
+> 绩效与风险视图，已等待净值曲线加载完成后截取，不含「正在加载」占位。图表数据来自演示用合成净值序列，界面保留来源与模拟标记。
+
+| 改动 | 效果 |
+| --- | --- |
+| 统一 Shell | 导航从顶栏迁入侧栏；顶栏只放品牌、面包屑、状态与检视开关 |
+| 全宽表格 | 32px 行高 + 固定表头，10 行全部进入 1920×1080 首屏，不再被状态条遮挡 |
+| 行检视联动 | 点任意一行即更新右侧检视，不跳页；搜索后按原始行索引回填，检视内容不会串位 |
+| 不可用状态 | 收益不可用时给出带原因的说明块，不隐藏列、不伪装成零收益 |
+| 主动留白处理 | 收紧卡片与图表高度，把表格下方的空白换成有语义的不可用说明，而非让表格被折叠线截断 |
+
+**边界**：本次是纯前端布局重构，API 契约、Python 分析逻辑、数据口径与验收范围均未改变；服务仍只监听 `127.0.0.1`，不提供公网交互实例。面板拖拽与布局保存未实现。
+
 ## 界面一览
 
-三个视角分别回答「组合长什么样」「图表加载完成后是什么状态」「数据究竟从哪来」。全部为本机实际运行截图，取自离线合成演示模式，未补画、未修饰。
+历史与当前视角分别回答「组合长什么样」「图表加载完成后是什么状态」「数据究竟从哪来」「16:9 新工作台是什么样」。全部为本机实际运行截图，取自离线合成演示模式，未补画、未修饰。v0.3.0 的新界面截图见上一节。
 
 ![组合总览加载完成态：持仓结构环形图与分类图例](docs/screenshots/fund-overview-v0.2.0.png)
 
@@ -26,9 +48,15 @@
 
 | 视角 | 查看 | 说明 |
 | --- | --- | --- |
-| 组合总览（含空状态） | [截图](docs/screenshots/app_v0.2.0.png) | 合成组合提示、四项指标、不可用的近一年收益 |
-| 7 秒界面演示 | [WebM 视频](docs/screenshots/demo-v0.2.0.webm) | 指标卡、图表与视图切换的交互过程 |
+| **v0.3.0 组合总览（16:9）** | [截图](docs/screenshots/app_v0.3.0.png) | 固定 Shell、全宽 10 行表格、右侧检视与底部口径状态条 |
+| **v0.3.0 绩效与风险（16:9）** | [截图](docs/screenshots/app_v0.3.0-analysis.png) | 净值走势加载完成态、数据来源、AI 辅助说明与右侧检视 |
+| 组合总览（v0.2.x，含空状态） | [截图](docs/screenshots/app_v0.2.0.png) | 合成组合提示、四项指标、不可用的近一年收益 |
+| 组合总览加载完成态 | [截图](docs/screenshots/fund-overview-v0.2.0.png) | 持仓结构环形图与分类图例 |
+| 数据来源与计算口径 | [截图](docs/screenshots/fund-provenance-v0.2.0.png) | 逐只基金的净值来源、日期与回退状态 |
+| 7 秒界面演示（v0.2.x） | [WebM 视频](docs/screenshots/demo-v0.2.0.webm) | 指标卡、图表与视图切换的交互过程 |
 | 旧版界面（历史 v0.1.0） | [截图](docs/screenshots/app_v0.1.0.png) | 早期界面，仅作迭代对照 |
+
+> v0.2.x 的截图与 7 秒演示对应旧的长页布局，保留作迭代对照；当前界面以 v0.3.0 两张 1920×1080 截图为准。
 
 ## 为什么单独做这个项目
 
@@ -117,13 +145,14 @@ flowchart LR
 
 ## 文档与发布状态
 
+- [v0.3.0 发布说明](RELEASE_NOTES_v0.3.0.md)
 - [数据来源与计算状态](docs/STATUS_v0.2.0.md)
 - [v0.2.1 发布说明](RELEASE_NOTES_v0.2.1.md)
 - [v0.2.0 发布说明](RELEASE_NOTES_v0.2.0.md)
 - [变更记录](CHANGELOG.md)
 
-v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.0)；v0.2.1 在功能代码不变的前提下补齐界面截图、图集与介绍，发布为 [v0.2.1 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.1)。两个项目的在线展示见[作品集展示页](https://mahonghao1.github.io/Embodied-AI-Data-Processing-Platform/)。
+v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.0)；v0.2.1 在功能代码不变的前提下补齐界面截图、图集与介绍，发布为 [v0.2.1 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.1)。v0.3.0 是纯前端布局重构版本，发布为 [v0.3.0 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.3.0)。两个项目的在线展示见[作品集展示页](https://mahonghao1.github.io/Embodied-AI-Data-Processing-Platform/)。
 
 ## English
 
-A local portfolio analytics demo with a React and TypeScript frontend, a loopback-only FastAPI bridge, and Python analysis logic. It records NAV and benchmark provenance, labels synthetic holdings and simulated NAV, and keeps benchmark comparisons unavailable when the data does not support them. No account connection, trading, or investment advice is provided. v0.2.1 adds verified UI screenshots and a fuller walkthrough without changing the application code.
+A local portfolio analytics demo with a React and TypeScript frontend, a loopback-only FastAPI bridge, and Python analysis logic. It records NAV and benchmark provenance, labels synthetic holdings and simulated NAV, and keeps benchmark comparisons unavailable when the data does not support them. No account connection, trading, or investment advice is provided. v0.2.1 adds verified UI screenshots and a fuller walkthrough without changing the application code. v0.3.0 rebuilds the UI as a fixed 16:9 workbench (48px header, 216px sidebar, fluid main area, 320px inspector, 34px status bar) with a full-width 32px table and row-linked inspection; API contracts, Python analytics, data provenance and the validated scope are unchanged.

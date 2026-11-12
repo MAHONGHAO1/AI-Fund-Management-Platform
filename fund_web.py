@@ -43,7 +43,7 @@ class AdviceRequest(BaseModel):
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="AI Fund local workbench", version="0.2.0", docs_url=None, redoc_url=None)
+    app = FastAPI(title="AI Fund local workbench", version="0.3.0", docs_url=None, redoc_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
     @app.middleware("http")
@@ -62,7 +62,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "app": "AI 智选基金助手", "version": "0.2.0", "scope": "loopback"}
+        return {"status": "ok", "app": "AI 智选基金助手", "version": "0.3.0", "scope": "loopback"}
 
     @app.get("/api/portfolio")
     def portfolio():
