@@ -172,6 +172,7 @@ function App() {
         <span className="brand-seal"><BarChart3 size={17} /></span>
         <span><strong>基金观察</strong><small>本地组合分析</small></span>
       </a>
+      <span className="shell-chip version-chip">v0.3.0 · React 工作台</span>
       <span className="shell-crumb">我的分析 <ChevronRight size={13} /> {views[view]}</span>
       {synthetic && <span className="shell-chip demo">离线演示 · 虚构合成组合</span>}
       <span className="shell-chip">{analysis?.summary.as_of ? `数据日期 ${analysis.summary.as_of}` : '数据日期不可用'}</span>

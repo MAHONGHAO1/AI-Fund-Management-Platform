@@ -217,6 +217,75 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .editor-actions { flex-wrap: wrap; }
   .fund-footer { flex-direction: column; gap: 6px; }
 }
+
+/* Carbon + AntV finance theme: calm surfaces, tabular numbers, semantic market states. */
+:root {
+  --font-body: "IBM Plex Sans", "Noto Sans SC", "Segoe UI", "Microsoft YaHei", sans-serif;
+  --color-ink: #161616;
+  --color-ink-soft: #525252;
+  --color-muted: #6f6f6f;
+  --color-ground: #f4f4f4;
+  --color-paper: #ffffff;
+  --color-paper-raised: #ffffff;
+  --color-line: #e0e0e0;
+  --color-line-strong: #a8a8a8;
+  --color-accent: #0f62fe;
+  --color-accent-hover: #0043ce;
+  --color-accent-ink: #ffffff;
+  --color-accent-soft: #e5f1ff;
+  --color-chart-ink: #0f62fe;
+  --color-chart-secondary: #8a3ffc;
+  --color-focus: #0f62fe;
+  --color-success: #198038;
+  --color-success-bg: #defbe6;
+  --color-warning: #8e562e;
+  --color-warning-bg: #fff1d6;
+  --color-danger: #da1e28;
+  --color-danger-bg: #fff1f1;
+  --color-live-bg: #defbe6;
+  --color-overlay: rgba(22, 22, 22, 0.08);
+  --radius-control: 4px;
+  --radius-panel: 4px;
+  --shadow-panel: none;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 28px;
+}
+body { font-size: var(--text-sm); line-height: 1.45; }
+.fund-app > .fund-topbar { background: #161616; color: #f4f4f4; border-bottom-color: #393939; }
+.fund-app > .fund-topbar .fund-brand strong,
+.fund-app > .fund-topbar .fund-brand small,
+.fund-app > .fund-topbar .fund-nav-link { color: #f4f4f4; }
+.fund-app > .fund-topbar .brand-seal { color: #78a9ff; border-color: #78a9ff; }
+.fund-app > .fund-topbar .fund-nav-link { color: #c6c6c6; }
+.fund-app > .fund-topbar .fund-nav-link.active { color: #ffffff; border-bottom-color: #78a9ff; }
+.fund-app > .fund-topbar .local-pill { color: #c6c6c6; }
+.fund-app > .fund-topbar .fund-icon-button { color: #f4f4f4; }
+.sidenav, .inspector, .statusbar { background: #ffffff; }
+.sidenav { border-right-color: #e0e0e0; }
+.sidenav .fund-nav-link.active { background: #e5f1ff; box-shadow: inset 3px 0 #0f62fe; }
+.fund-panel, .metric-row, .detail-metrics, .source-overview { border-radius: 4px; box-shadow: none; }
+.metric-card { padding: 16px; }
+.fund-table th, .holdings-table th { height: 32px; padding: 8px 9px; background: #f4f4f4; }
+.fund-table td, .holdings-table td { height: 32px; padding: 7px 9px; }
+.fund-table tbody tr:hover { background: #f4f4f4; }
+.fund-table tbody tr.selected-row { background: #e5f1ff; }
+.source-badge { border-radius: 3px; }
+.fund-button, .period-button { border-radius: 4px; }
+.return-up { color: #da1e28; }
+.return-down { color: #198038; }
+
+@media (max-width: 900px) {
+  .fund-app > .fund-topbar { background: #161616; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
@@ -248,6 +317,7 @@ body { min-width: 0; }
 .shell-crumb { display: inline-flex; align-items: center; gap: 4px; color: var(--color-muted); font-size: 12px; white-space: nowrap; }
 .shell-chip { max-width: 250px; overflow: hidden; text-overflow: ellipsis; font-size: 11px; padding: 3px 9px; border: 1px solid var(--color-line-strong); border-radius: 999px; color: var(--color-ink-soft); white-space: nowrap; }
 .shell-chip.demo { color: var(--color-warning); background: var(--color-warning-bg); border-color: transparent; }
+.version-chip { color: #d0e2ff; border-color: #525252; background: #262626; }
 .fund-app .fund-top-actions { margin-left: auto; gap: 10px; }
 .fund-app .fund-icon-button { width: 30px; height: 30px; }
 .shell-toggle { padding: 5px 9px; border: 1px solid var(--color-line-strong); border-radius: 6px; background: transparent; color: var(--color-ink-soft); font-size: 11px; cursor: pointer; white-space: nowrap; }
