@@ -1,18 +1,152 @@
-# AI 智选基金助手
+# 基金观察 · AI 智选基金助手
 
-**v0.4.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
+**先说清每个数字从哪来，再谈收益。**
+
+v0.4.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户
 
 [![tests](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml/badge.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml) [![release](https://img.shields.io/badge/release-v0.4.0-blue.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.4.0) [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![portfolio](https://img.shields.io/badge/portfolio-live-1677ff.svg)](https://mahonghao1.github.io/)
 
-**在线展示（无需安装）**：[作品集首页](https://mahonghao1.github.io/) 汇总两个项目的当前截图、验收证据与能力边界。静态展示页不提供本机的 Python 交互服务。
+基金 App 上那个「近一年收益 12.4%」，你信吗？它可能是三年前某天的净值算出来的，也可能中途中止过计算，只是没告诉你。
 
-把组合表现、风险指标、基金明细和数据来源放进一套本地分析工作台。Python 继续负责净值处理、指标计算与 AI 回退；浏览器只呈现本机 API 返回的分析结果。
+这个工作台换个顺序：**先回答这个数能不能用，再把这个数给你**。每只基金的净值来源、取数日期、回退原因都逐条摊开；数据撑不起这个区间，就写「不可用」，不拿 0.00% 糊过去。
 
-![v0.3.0 基金工作台当前界面：固定 Shell、KPI 四卡、全宽 10 行持仓表、右侧检视与底部口径状态条](docs/screenshots/app_v0.3.0.png)
+![v0.3.0 工作台：固定 Shell、KPI 四卡、全宽持仓表、右侧检视与底部口径状态条](docs/screenshots/app_v0.3.0.png)
 
-> 当前版本首屏。2026-11-11 从本机 FastAPI 离线演示服务生成；持仓是虚构合成样例，净值标为模拟数据，近一年收益与基准比较明确显示「不可用」，不以 0.00% 代替。右侧检视列出净值来源、回退状态与计算口径。本项目不连接真实账户、不执行交易、不提供投资建议。
+> 本机 FastAPI 离线演示服务截取。持仓是虚构合成样例，净值标为模拟数据。模拟净值一律不算收益与风险指标，所以这里显示「不可用」——这是规则，不是碰巧数据不够长。
 
-**当前界面以 v0.3.0 截图为准**（v0.4.0 只修指标口径与可用性，未改布局，但改了几处文案徽标）。v0.2.x 的截图与 7 秒 WebM 演示只保留在「界面一览」的迭代对照表中，[观看历史界面演示（WebM）](docs/screenshots/demo-v0.2.0.webm) 使用离线合成数据，无真实账户或投资数据。
+## 三个你可能正在经历的场面
+
+**同一只基金，三个 App 三个收益率。** 谁也不说自己是按哪段区间、哪天净值算的。这里把区间写在按钮上，把区间首尾日期写在数字下面，把数据源写在同一张卡里。对不上时，你知道该去质疑谁。
+
+**数据源挂了，页面还在展示收益。** 很多工具会悄悄切到备用源、或者干脆沿用上一次的值，数字照旧好看。这里回退是要留痕的：请求了哪个源、实际用了哪个、为什么回退、失败原因是什么，全在「数据来源」页。
+
+**指标算不出来，却显示成 0.00%。** 一只成立不到一年的基金没有「近一年收益」，这是事实，不是缺陷。工作台让它显示「不可用」，并说明原因，而不是填一个零让你误读成「没涨没跌」。
+
+## 它替你省掉什么
+
+| 通常的做法 | 这里 |
+| --- | --- |
+| 只看一个收益率数字就下判断 | 数字旁边永远带着来源、日期、区间和可用性 |
+| 数据源失败时页面照常显示旧值 | 回退逐条留痕，模拟数据逐只标记 |
+| 导出报告只有结论 | Markdown / HTML 报告带完整来源与边界说明 |
+| 想知道口径得翻代码 | 「数据与说明」页直接列出计算口径 |
+
+## 现在能看到什么
+
+![组合总览加载完成态：持仓结构环形图与分类图例](docs/screenshots/fund-overview-v0.2.0.png)
+
+> 顶部横幅常驻标注「当前组合为虚构合成示例」。空值不会被画成 0.00%。
+
+![数据来源与计算口径：逐只基金的净值来源、日期与回退状态](docs/screenshots/fund-provenance-v0.2.0.png)
+
+> 每只基金分别标出净值来源（东方财富 / AkShare / 模拟数据）、数据日期与回退状态；右侧同时列出计算口径与能力边界。
+
+| 视角 | 查看 | 说明 |
+| --- | --- | --- |
+| 组合总览（16:9） | [截图](docs/screenshots/app_v0.3.0.png) | 固定 Shell、全宽 10 行表格、右侧检视与底部口径状态条 |
+| 绩效与风险（16:9） | [截图](docs/screenshots/app_v0.3.0-analysis.png) | 净值走势加载完成态、数据来源、AI 辅助说明与右侧检视 |
+| 加载完成态 | [截图](docs/screenshots/fund-overview-v0.2.0.png) | 持仓结构环形图与分类图例 |
+| 数据来源与口径 | [截图](docs/screenshots/fund-provenance-v0.2.0.png) | 逐只基金的净值来源、日期与回退状态 |
+| 7 秒界面演示 | [WebM](docs/screenshots/demo-v0.2.0.webm) | 指标卡、图表与视图切换（v0.2.x 旧布局） |
+
+v0.2.x 的截图与录像对应旧的长页布局，留作迭代对照；当前界面看 v0.3.0 两张 1920×1080。
+
+## 为什么单独做这个
+
+市面上的基金工具，多数把「算得准」当成卖点。但真到你手上，判断能不能用的信息往往被折叠进一个二级页面，甚至根本没有。
+
+这个项目想验的是另一件事：**把数据来源写进界面，产品会不会更好用**。真实净值、AkShare 回退、模拟净值、离线演示四条路径，都在页面和报告里留了痕。区间不够、基准不可比、数据源失败，界面就说「不可用」。Python 负责净值标准化、风险计算和报告生成，浏览器只呈现本机 API 的返回结果。
+
+## 能力与验证
+
+- **组合总览**：持仓金额、累计收益、基金数量、组合评分、结构图和可筛选持仓表。
+- **绩效与风险**：收益、回撤、波动率和净值历史；缺失或样本不足的指标显示不可用，不用零值代替。
+- **来源说明**：基金净值和基准分别记录来源、数据日期、回退状态与失败原因，页面与 Markdown / HTML 报告同步呈现。
+- **Python 核心**：数据加载、净值标准化、风险计算、相对评分与 AI 文本生成。
+- **本地 AI 回退**：无密钥时走本地规则并显示模式与免责声明；有密钥时只随当前建议请求传递，不落盘、不写日志。
+- **验证**：后端 34 项测试、前端 5 项单测、1 项浏览器流程；覆盖公开数据源响应与异常、无效净值、回退、收益与回撤口径、离线不联网、报告标识与 API 行为。
+
+默认持仓是合成数据，不连接真实账户、不提交交易、不提供投资建议。离线模拟净值只用于演示产品流程，任何图表、评分、收益数字或 AI 文本都不构成投资结论。
+
+## 本地启动
+
+Windows、Python 3.12、Node.js 24 LTS 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。克隆后在 PowerShell 执行：
+
+```powershell
+git clone https://github.com/MAHONGHAO1/AI-Fund-Management-Platform.git
+cd AI-Fund-Management-Platform
+py -3.12 -m pip install uv
+uv sync --locked
+Push-Location frontend
+npm ci
+npm run build
+Pop-Location
+$env:FUND_OFFLINE_DEMO = "true"
+uv run --locked python -m fund_web
+```
+
+服务只监听本机，默认使用离线演示数据，保证合成持仓、模拟净值和不可用基准的展示可重复。启动后打开 [http://127.0.0.1:8766](http://127.0.0.1:8766)。装好 Node.js 24 与 uv 后，也可以直接双击 `启动基金助手.cmd`，脚本会用 `npm ci` 装锁版前端依赖、构建页面并启动服务（不会自动开浏览器）。
+
+开发热更新：一个终端跑 `uv run --locked python -m fund_web`，另一个终端：
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+Vite 页面在 `http://127.0.0.1:5173`，API 转发到本机 8766。
+
+### 离线作品演示
+
+离线模式下应用不请求公开净值数据源，页面分别标记合成持仓和模拟净值；无 API Key 时继续用本地建议回退。启动脚本默认打开该模式，手工启动后端时也应设置：
+
+```powershell
+$env:FUND_OFFLINE_DEMO = "true"
+.\启动基金助手.cmd
+```
+
+想检查公开数据源及其回退流程，把变量设为 `false` 再启动。该设置只影响当前终端启动的进程。
+
+## 测试与锁定依赖
+
+与 GitHub Actions 使用同一套 Python 3.12、Node.js 24 和锁定文件：
+
+```powershell
+uv sync --locked
+uv run --locked python -m pytest -q
+Push-Location frontend
+npm ci
+npm test
+npx playwright install chromium
+npm run test:e2e
+npm run build
+Pop-Location
+```
+
+本机验收环境为 Python 3.12.10 / Node.js 24.15.0；Python 测试 34 项通过，前端单测 5 项与浏览器关键流程 1 项通过。测试建议带 `--basetemp`，避免本机累积的 pytest 临时目录触发清理保护：
+
+```powershell
+uv run --locked python -m pytest tests/ -q --basetemp=/tmp/fund-pytest
+```
+
+CI 使用合成响应，不依赖外网基金数据。
+
+## 架构
+
+```mermaid
+flowchart LR
+  UI[React + TypeScript 工作台] -->|同源 /api| API[FastAPI · 127.0.0.1:8766]
+  API --> CORE[Python 分析服务]
+  CORE --> DATA[东方财富 / AkShare / 离线合成数据]
+  CORE --> METRICS[收益、回撤、风险与相对评分]
+  CORE --> AI[当前请求的 AI 文本或本地回退]
+  CORE --> REPORT[Markdown / HTML 报告]
+```
+
+## 版本记录
+
+每一版改了什么、为什么改，都写在这里。想看当前能力，往上翻到「能力与验证」。
 
 ## v0.4.0 · 指标口径与模拟数据边界修正
 
@@ -57,121 +191,6 @@
 
 **边界**：本次是纯前端布局重构，API 契约、Python 分析逻辑、数据口径与验收范围均未改变；服务仍只监听 `127.0.0.1`，不提供公网交互实例。面板拖拽与布局保存未实现。
 
-## 界面一览
-
-历史与当前视角分别回答「组合长什么样」「图表加载完成后是什么状态」「数据究竟从哪来」「16:9 新工作台是什么样」。全部为本机实际运行截图，取自离线合成演示模式，未补画、未修饰。v0.3.0 的新界面截图见上一节。
-
-![组合总览加载完成态：持仓结构环形图与分类图例](docs/screenshots/fund-overview-v0.2.0.png)
-
-> 组合总览加载完成状态。顶部橙色横幅始终标注「当前组合为虚构合成示例」；近一年收益与基准比较明确显示不可用，空值不会被画成 0.00%。
-
-![数据来源与计算口径：逐只基金的净值来源、日期与回退状态](docs/screenshots/fund-provenance-v0.2.0.png)
-
-> 数据来源与计算口径页。每只基金分别标出净值来源（东方财富 / AkShare / 模拟数据）、数据日期与回退状态；右侧同时列出计算口径与能力边界。
-
-| 视角 | 查看 | 说明 |
-| --- | --- | --- |
-| **v0.3.0 组合总览（16:9）** | [截图](docs/screenshots/app_v0.3.0.png) | 固定 Shell、全宽 10 行表格、右侧检视与底部口径状态条 |
-| **v0.3.0 绩效与风险（16:9）** | [截图](docs/screenshots/app_v0.3.0-analysis.png) | 净值走势加载完成态、数据来源、AI 辅助说明与右侧检视 |
-| 历史 · 组合总览（v0.2.x，含空状态） | [截图](docs/screenshots/app_v0.2.0.png) | 合成组合提示、四项指标、不可用的近一年收益 |
-| 历史 · 组合总览加载完成态 | [截图](docs/screenshots/fund-overview-v0.2.0.png) | 持仓结构环形图与分类图例 |
-| 历史 · 数据来源与计算口径 | [截图](docs/screenshots/fund-provenance-v0.2.0.png) | 逐只基金的净值来源、日期与回退状态 |
-| 7 秒界面演示（v0.2.x） | [WebM 视频](docs/screenshots/demo-v0.2.0.webm) | 指标卡、图表与视图切换的交互过程 |
-| 旧版界面（历史 v0.1.0） | [截图](docs/screenshots/app_v0.1.0.png) | 早期界面，仅作迭代对照 |
-
-> v0.2.x 的截图与 7 秒演示对应旧的长页布局，保留作迭代对照；当前界面以 v0.3.0 两张 1920×1080 截图为准。
-
-## 为什么单独做这个项目
-
-验证「把数据来源写进界面」这件事。真实净值、AkShare 回退、模拟净值、离线演示四条路径都在页面和报告里留痕；当区间不足一年、基准不可比或数据源失败时，界面说「不可用」，而不是给出一个好看但无依据的数字。Python 负责净值标准化、风险计算与报告生成，浏览器只呈现本机 API 的返回结果。
-
-## 能力与验证
-
-- **组合总览**：持仓金额、累计收益、基金数量、组合评分、结构图和可筛选持仓表。
-- **绩效与风险**：收益、回撤、波动率和净值历史；缺失或样本不足的指标显示不可用，不用零值代替。
-- **来源说明**：基金净值和基准分别记录来源、数据日期、回退状态与失败原因，并显示在页面和 Markdown / HTML 报告中。
-- **Python 核心**：继续复用既有数据加载、净值标准化、风险计算、相对评分和 AI 文本生成逻辑。
-- **本地 AI 回退**：无密钥时使用本地规则并显示模式与免责声明；有密钥时只随当前建议请求传递，不落盘、不写日志。
-- **验证证据**：测试覆盖公开数据源响应和异常、无效净值、回退、收益与回撤、离线不联网、报告标识和 API 行为；前端包含单测与浏览器流程测试。
-
-默认持仓是合成数据，不连接真实账户、不提交交易，也不提供投资建议。离线模拟净值只用于演示产品流程；任何图表、评分、收益数字或 AI 文本都不能视为投资结论。
-
-## 本地启动
-
-需要 Windows、Python 3.12、Node.js 24 LTS 和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。克隆仓库后，在 PowerShell 执行：
-
-```powershell
-git clone https://github.com/MAHONGHAO1/AI-Fund-Management-Platform.git
-cd AI-Fund-Management-Platform
-py -3.12 -m pip install uv
-uv sync --locked
-Push-Location frontend
-npm ci
-npm run build
-Pop-Location
-$env:FUND_OFFLINE_DEMO = "true"
-uv run --locked python -m fund_web
-```
-
-服务只监听本机。默认使用离线演示数据，确保合成持仓、模拟净值和不可用基准的展示可重复；启动后在浏览器打开 [http://127.0.0.1:8766](http://127.0.0.1:8766)。也可在安装好 Node.js 24 LTS 与 uv 后双击 `启动基金助手.cmd`；启动脚本会用 `npm ci` 安装锁定前端依赖、构建页面并启动 FastAPI。它不会自动打开浏览器。
-
-如需开发热更新，可在一个终端运行 `uv run --locked python -m fund_web`，再在另一个终端运行：
-
-```powershell
-cd frontend
-npm ci
-npm run dev
-```
-
-Vite 开发页面地址为 `http://127.0.0.1:5173`，API 请求转发到本机 8766 端口。
-
-### 离线作品演示
-
-离线模式下，应用不请求公开净值数据源，页面会分别标记合成持仓和模拟净值；无 API Key 时继续使用本地建议回退。启动脚本默认打开该模式；手工启动后端时也应设置：
-
-```powershell
-$env:FUND_OFFLINE_DEMO = "true"
-.\启动基金助手.cmd
-```
-
-若要检查公开数据源及其回退流程，把变量设为 `false` 后再启动。该设置只影响当前终端启动的进程。
-
-## 测试与锁定依赖
-
-使用与 GitHub Actions 相同的 Python 3.12、Node.js 24 和锁定文件：
-
-```powershell
-uv sync --locked
-uv run --locked python -m pytest -q
-Push-Location frontend
-npm ci
-npm test
-npx playwright install chromium
-npm run test:e2e
-npm run build
-Pop-Location
-```
-
-本机验收环境为 Python 3.12.10 / Node.js 24.15.0；Python 测试 34 项通过，前端单测 5 项与浏览器关键流程 1 项通过。测试建议带 `--basetemp`，避免本机累积的 pytest 临时目录触发清理保护：
-
-```powershell
-uv run --locked python -m pytest tests/ -q --basetemp=/tmp/fund-pytest
-```
-
-CI 使用合成响应，不依赖外网基金数据。
-
-## 架构
-
-```mermaid
-flowchart LR
-  UI[React + TypeScript 工作台] -->|同源 /api| API[FastAPI · 127.0.0.1:8766]
-  API --> CORE[Python 分析服务]
-  CORE --> DATA[东方财富 / AkShare / 离线合成数据]
-  CORE --> METRICS[收益、回撤、风险与相对评分]
-  CORE --> AI[当前请求的 AI 文本或本地回退]
-  CORE --> REPORT[Markdown / HTML 报告]
-```
-
 ## 文档与发布状态
 
 - [v0.4.0 发布说明：指标口径与模拟数据边界修正](RELEASE_NOTES_v0.4.0.md)
@@ -186,4 +205,10 @@ v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHO
 
 ## English
 
-A local portfolio analytics demo with a React and TypeScript frontend, a loopback-only FastAPI bridge, and Python analysis logic. It records NAV and benchmark provenance, labels synthetic holdings and simulated NAV, and keeps benchmark comparisons unavailable when the data does not support them. No account connection, trading, or investment advice is provided. v0.3.0 rebuilds the UI as a fixed 16:9 workbench (48px header, 216px sidebar, fluid main area, 320px inspector, 34px status bar) with a full-width 32px table and row-linked inspection. **v0.4.0 is a correctness release with no new features**: it fixes interval returns that always showed the one-year figure, drawdown peaks that ignored highs outside the window, synthetic NAV being used to project holdings, and the frontend computing returns from simulated data that the backend had deliberately marked unavailable. It also stops `nan` literals from reaching HTML reports and AI prompts, keeps unscored rows visible instead of silently filtering them out, and sanitises local paths out of error responses.
+**Say where every number came from, before talking about returns.**
+
+That "12.4% over the past year" on a fund app — can you trust it? It might be computed from a NAV three years old, or the calculation might have silently fallen back to a backup source. This workbench flips the order: it answers *whether the number is usable* first, then hands you the number. Every fund carries its NAV source, fetch date and fallback reason. When the data cannot support the window, it says "unavailable" instead of printing 0.00%.
+
+Four data paths — live EastMoney, AkShare fallback, simulated NAV, offline demo — all leave a trace in the UI and in the exported reports. Missing or insufficient metrics are marked unavailable rather than zeroed. The default portfolio is synthetic: no real account, no trading, no investment advice.
+
+v0.4.0 is a correctness release with no new features. It fixed interval returns that always showed the one-year figure, drawdown peaks that ignored highs outside the window, synthetic NAV being used to project holdings, and the frontend computing returns from simulated data the backend had deliberately marked unavailable.
