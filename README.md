@@ -2,15 +2,17 @@
 
 **v0.3.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
 
-在线作品集展示页（无需安装即可查看两个项目的真实截图、验收证据与能力边界）：https://mahonghao1.github.io/Embodied-AI-Data-Processing-Platform/
+[![tests](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml/badge.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml) [![release](https://img.shields.io/badge/release-v0.3.0-blue.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.3.0) [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![portfolio](https://img.shields.io/badge/portfolio-live-1677ff.svg)](https://mahonghao1.github.io/)
+
+**在线展示（无需安装）**：[作品集首页](https://mahonghao1.github.io/) 汇总两个项目的当前截图、验收证据与能力边界。静态展示页不提供本机的 Python 交互服务。
 
 把组合表现、风险指标、基金明细和数据来源放进一套本地分析工作台。Python 继续负责净值处理、指标计算与 AI 回退；浏览器只呈现本机 API 返回的分析结果。
 
-![基金观察工作台：离线演示中的合成组合、收益风险视图和来源标签](docs/screenshots/app_v0.2.0.png)
+![v0.3.0 基金工作台当前界面：固定 Shell、KPI 四卡、全宽 10 行持仓表、右侧检视与底部口径状态条](docs/screenshots/app_v0.3.0.png)
 
-> 截图于 2026-11-09 从 FastAPI 本地服务生成。持仓是虚构合成样例，净值标为模拟数据；由于区间不足一年，近一年收益明确显示为不可用，基准比较也不可用。截图仅展示界面和数据来源呈现。
+> 当前版本首屏。2026-11-11 从本机 FastAPI 离线演示服务生成；持仓是虚构合成样例，净值标为模拟数据，近一年收益与基准比较明确显示「不可用」，不以 0.00% 代替。右侧检视列出净值来源、回退状态与计算口径。本项目不连接真实账户、不执行交易、不提供投资建议。
 
-[观看 7 秒工作台交互演示（WebM）](docs/screenshots/demo-v0.2.0.webm) · 使用离线合成数据，无真实账户或投资数据。
+**当前界面以 v0.3.0 为准。** v0.2.x 的截图与 7 秒 WebM 演示只保留在「界面一览」的迭代对照表中，[观看历史界面演示（WebM）](docs/screenshots/demo-v0.2.0.webm) 使用离线合成数据，无真实账户或投资数据。
 
 ## v0.3.0 · 16:9 固定工作台
 
@@ -50,9 +52,9 @@
 | --- | --- | --- |
 | **v0.3.0 组合总览（16:9）** | [截图](docs/screenshots/app_v0.3.0.png) | 固定 Shell、全宽 10 行表格、右侧检视与底部口径状态条 |
 | **v0.3.0 绩效与风险（16:9）** | [截图](docs/screenshots/app_v0.3.0-analysis.png) | 净值走势加载完成态、数据来源、AI 辅助说明与右侧检视 |
-| 组合总览（v0.2.x，含空状态） | [截图](docs/screenshots/app_v0.2.0.png) | 合成组合提示、四项指标、不可用的近一年收益 |
-| 组合总览加载完成态 | [截图](docs/screenshots/fund-overview-v0.2.0.png) | 持仓结构环形图与分类图例 |
-| 数据来源与计算口径 | [截图](docs/screenshots/fund-provenance-v0.2.0.png) | 逐只基金的净值来源、日期与回退状态 |
+| 历史 · 组合总览（v0.2.x，含空状态） | [截图](docs/screenshots/app_v0.2.0.png) | 合成组合提示、四项指标、不可用的近一年收益 |
+| 历史 · 组合总览加载完成态 | [截图](docs/screenshots/fund-overview-v0.2.0.png) | 持仓结构环形图与分类图例 |
+| 历史 · 数据来源与计算口径 | [截图](docs/screenshots/fund-provenance-v0.2.0.png) | 逐只基金的净值来源、日期与回退状态 |
 | 7 秒界面演示（v0.2.x） | [WebM 视频](docs/screenshots/demo-v0.2.0.webm) | 指标卡、图表与视图切换的交互过程 |
 | 旧版界面（历史 v0.1.0） | [截图](docs/screenshots/app_v0.1.0.png) | 早期界面，仅作迭代对照 |
 
@@ -151,7 +153,7 @@ flowchart LR
 - [v0.2.0 发布说明](RELEASE_NOTES_v0.2.0.md)
 - [变更记录](CHANGELOG.md)
 
-v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.0)；v0.2.1 在功能代码不变的前提下补齐界面截图、图集与介绍，发布为 [v0.2.1 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.1)。v0.3.0 是纯前端布局重构版本，发布为 [v0.3.0 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.3.0)。两个项目的在线展示见[作品集展示页](https://mahonghao1.github.io/Embodied-AI-Data-Processing-Platform/)。
+v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.0)；v0.2.1 在功能代码不变的前提下补齐界面截图、图集与介绍，发布为 [v0.2.1 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.1)。v0.3.0 是纯前端布局重构版本，发布为 [v0.3.0 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.3.0)。两个项目的在线展示见[作品集首页](https://mahonghao1.github.io/)与[RoboData 深度页](https://mahonghao1.github.io/robodata/)。
 
 ## English
 
