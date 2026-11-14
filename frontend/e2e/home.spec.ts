@@ -7,7 +7,10 @@ test('fund dashboard identifies its sample holdings', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: '组合概览' })).toBeVisible();
   await expect(page.getByText('当前组合为虚构合成示例')).toBeVisible();
-  await expect(page.getByText('演示科技基金')).toBeVisible();
+  // 基金名同时出现在表格行与图表无障碍摘要里：用 exact 锁定表格里的那个节点。
+  await expect(page.getByText('演示科技基金', { exact: true })).toBeVisible();
+  // 图表是 canvas，sr-only 摘要是读屏用户唯一的等价信息，断言它确实挂上了。
+  await expect(page.getByText('各基金近一年收益：演示科技基金 +3.20%。')).toBeAttached();
   await page.getByRole('button', { name: '绩效分析' }).click();
   await expect(page.getByRole('heading', { name: '收益与风险' })).toBeVisible();
   await expect(page.getByText('模拟净值或基准源不可用')).toBeVisible();

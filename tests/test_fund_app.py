@@ -183,8 +183,10 @@ def test_simulated_nav_never_requests_benchmark_and_comparison_is_unavailable(mo
     )
     row = fund.analyze_fund({"code": "000001", "name": "合成测试基金"}, {}, 0)
 
-    assert row["比较基准"] == "不可用"
+    # v0.4.0 起模拟净值统一走 analyze_fund_with_mock，基准说明会带上原因
+    assert row["比较基准"].startswith("不可用")
     assert row["基准可用"] is False
+    assert row["指标可用"] is False
     assert np.isnan(row["近1年基准收益率"])
     assert np.isnan(row["近1月超额收益率"])
     assert np.isnan(row["近1年超额收益率"])

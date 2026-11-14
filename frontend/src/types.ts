@@ -6,7 +6,8 @@ export type FundRow = Record<string, any> & {
   最新净值日期: string;
   当前持有金额: number;
   累计收益: number;
-  "综合评分(0-10)": number;
+  "综合评分(0-10)": number | null;
+  指标可用?: boolean;
   近1年收益率: number | null;
   近1年最大回撤: number | null;
   基准可用: boolean;
@@ -41,6 +42,15 @@ export interface FundHistory {
   nav_provenance: Record<string, any>;
   benchmark_provenance: Record<string, any>;
   benchmark_available: boolean;
+  synthetic: boolean;
+  metrics_available: boolean;
+  requested_days: number | null;
+  available_days: number;
+  coverage_start: string | null;
+  coverage_end: string | null;
+  truncated: boolean;
+  history_capped: boolean;
+  lookback_days: number;
 }
 
 export interface Advice {

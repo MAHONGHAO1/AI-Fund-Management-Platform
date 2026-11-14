@@ -1,6 +1,6 @@
 [project]
 name = "ai-fund-management-platform"
-version = "0.2.0"
+version = "0.4.0"
 description = "本地运行的基金净值、来源追踪与组合分析演示工具"
 requires-python = ">=3.12,<3.13"
 dependencies = [

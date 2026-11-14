@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Literal
 
@@ -42,8 +43,25 @@ class AdviceRequest(BaseModel):
     provider: Literal["glm", "dashscope"] = "glm"
 
 
+_PATH_PATTERNS = (
+    re.compile(r"[A-Za-z]:\\[^\s'\"、，。）)]+"),
+    re.compile(r"/(?:Users|home|opt|data|var|private)/[^\s'\"、，。）)]+"),
+    re.compile(r"\\\\[^\s'\"、，。）]+"),
+)
+
+
+def _safe_error(exc: Exception, label: str) -> str:
+    """错误信息对外只保留类型与原因，本机绝对路径一律替换掉。"""
+    text = f"{type(exc).__name__}: {exc}"
+    for pattern in _PATH_PATTERNS:
+        text = pattern.sub("<本机路径>", text)
+    if len(text) > 240:
+        text = text[:240] + "…"
+    return f"{label}：{text}"
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="AI Fund local workbench", version="0.3.0", docs_url=None, redoc_url=None)
+    app = FastAPI(title="AI Fund local workbench", version="0.4.0", docs_url=None, redoc_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
     @app.middleware("http")
@@ -62,7 +80,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "app": "AI 智选基金助手", "version": "0.3.0", "scope": "loopback"}
+        return {"status": "ok", "app": "AI 智选基金助手", "version": "0.4.0", "scope": "loopback"}
 
     @app.get("/api/portfolio")
     def portfolio():
@@ -89,7 +107,7 @@ def create_app() -> FastAPI:
             rows = fund_service.analysis_rows()
             return {"rows": rows, "summary": fund_service.analysis_summary(rows)}
         except Exception as exc:
-            raise HTTPException(status_code=503, detail=f"数据分析暂不可用：{type(exc).__name__}: {exc}") from exc
+            raise HTTPException(status_code=503, detail=_safe_error(exc, "数据分析暂不可用")) from exc
 
     @app.get("/api/funds/{code}")
     def fund_detail(code: str):
@@ -101,6 +119,8 @@ def create_app() -> FastAPI:
             return row
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=_safe_error(exc, "基金详情暂不可用")) from exc
 
     @app.get("/api/funds/{code}/history")
     def fund_history(code: str, days: int = 365):
@@ -111,7 +131,7 @@ def create_app() -> FastAPI:
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
-            raise HTTPException(status_code=503, detail=f"净值历史暂不可用：{type(exc).__name__}: {exc}") from exc
+            raise HTTPException(status_code=503, detail=_safe_error(exc, "净值历史暂不可用")) from exc
 
     @app.post("/api/funds/{code}/advice")
     def advice(code: str, request: AdviceRequest):
@@ -121,13 +141,16 @@ def create_app() -> FastAPI:
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
-            raise HTTPException(status_code=503, detail=f"建议生成暂不可用：{type(exc).__name__}: {exc}") from exc
+            raise HTTPException(status_code=503, detail=_safe_error(exc, "建议生成暂不可用")) from exc
 
     @app.get("/api/export/markdown")
     def export_markdown():
-        rows = fund_service.analysis_rows()
-        state = fund_service.get_portfolio()
-        report = fund_service.advisor.build_markdown_report(rows, synthetic_portfolio=state["synthetic"])
+        try:
+            rows = fund_service.analysis_rows()
+            state = fund_service.get_portfolio()
+            report = fund_service.advisor.build_markdown_report(rows, synthetic_portfolio=state["synthetic"])
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=_safe_error(exc, "报告导出暂不可用")) from exc
         return Response(report, media_type="text/markdown; charset=utf-8",
                         headers={"Content-Disposition": "attachment; filename=fund-analysis.md"})
 

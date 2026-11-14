@@ -1,8 +1,8 @@
 # AI 智选基金助手
 
-**v0.3.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
+**v0.4.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户**
 
-[![tests](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml/badge.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml) [![release](https://img.shields.io/badge/release-v0.3.0-blue.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.3.0) [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![portfolio](https://img.shields.io/badge/portfolio-live-1677ff.svg)](https://mahonghao1.github.io/)
+[![tests](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml/badge.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml) [![release](https://img.shields.io/badge/release-v0.4.0-blue.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.4.0) [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![portfolio](https://img.shields.io/badge/portfolio-live-1677ff.svg)](https://mahonghao1.github.io/)
 
 **在线展示（无需安装）**：[作品集首页](https://mahonghao1.github.io/) 汇总两个项目的当前截图、验收证据与能力边界。静态展示页不提供本机的 Python 交互服务。
 
@@ -12,7 +12,28 @@
 
 > 当前版本首屏。2026-11-11 从本机 FastAPI 离线演示服务生成；持仓是虚构合成样例，净值标为模拟数据，近一年收益与基准比较明确显示「不可用」，不以 0.00% 代替。右侧检视列出净值来源、回退状态与计算口径。本项目不连接真实账户、不执行交易、不提供投资建议。
 
-**当前界面以 v0.3.0 为准。** v0.2.x 的截图与 7 秒 WebM 演示只保留在「界面一览」的迭代对照表中，[观看历史界面演示（WebM）](docs/screenshots/demo-v0.2.0.webm) 使用离线合成数据，无真实账户或投资数据。
+**当前界面以 v0.3.0 截图为准**（v0.4.0 只修指标口径与可用性，未改布局，但改了几处文案徽标）。v0.2.x 的截图与 7 秒 WebM 演示只保留在「界面一览」的迭代对照表中，[观看历史界面演示（WebM）](docs/screenshots/demo-v0.2.0.webm) 使用离线合成数据，无真实账户或投资数据。
+
+## v0.4.0 · 指标口径与模拟数据边界修正
+
+**这一版没有新功能。** 修的是「界面上的数字和它的标签对不上」这类问题——一个收益率写错区间、一个回撤漏算前期高点，比少一个功能严重得多。
+
+| 修掉的问题 | 之前的表现 | 现在 |
+| --- | --- | --- |
+| 区间收益口径 | 点「近 1 月 / 近 3 年」只改标题，数值恒为近一年 | 按所选区间用净值首尾计算；数据不够长时明说「数据源仅覆盖 N 天」 |
+| 最大回撤峰值 | 峰值只在窗口内取，窗口外的高点被漏掉，-50% 可能显示 0.00% | 峰值取全历史 `cummax` 再算窗口内回撤 |
+| 模拟净值推算持仓 | 数据源失败时用合成净值改写你录入的持仓金额 | 保留你录入的快照金额，模拟净值不推算 |
+| 前端自算模拟收益 | 「最大回撤：不可用」旁边同时显示「区间收益：+21.30%」 | 可用性由后端契约裁决（`synthetic` / `metrics_available`），四张卡统一门禁 |
+| 「全部」区间语义 | 用 3650 天顶替，成立不足 10 年的基金全部误报「数据不完整」 | 区分「你选的区间没取满（`truncated`）」与「顶到 10 年上限（`history_capped`）」 |
+| 报告里的 `nan` | HTML 报告表格与 AI 提示词直接印出字面量 `nan` | 统一 `fmt_score()` 出口，一律显示「不可用」 |
+| 离线演示主表 | 不可评分行被过滤掉，表格空着 | 保留这些行并显示「不可用」，不把「没指标」伪装成「没结果」 |
+| 接口异常 | 500 并回带本机绝对路径 | 503 + 路径脱敏为 `<本机路径>` |
+
+同时修了一批可用性缺陷：历史净值三态与「重新读取」、持仓草稿二次确认、导出报告走 `fetch`+`Blob`、表格行键盘可达（保留 `<tr>` 行语义）、来源徽标新增「未知」灰色态（未知不再落进绿色「实时」）、回退状态中文化、数字输入允许负号、图表带 `aria-label` 与 `sr-only` 文字摘要。
+
+完整判定、被推翻的审计结论与复现方式见 [v0.4.0 发布说明](RELEASE_NOTES_v0.4.0.md) 与 [上线前审计记录](docs/AUDIT_v0.4.0.md)。
+
+> **报告口径已变**：旧版截图与旧报告里的数值可能和新版不一致——那是旧版算错了，不是新版算错了。
 
 ## v0.3.0 · 16:9 固定工作台
 
@@ -30,7 +51,7 @@
 | --- | --- |
 | 统一 Shell | 导航从顶栏迁入侧栏；顶栏只放品牌、面包屑、状态与检视开关 |
 | 全宽表格 | 32px 行高 + 固定表头，10 行全部进入 1920×1080 首屏，不再被状态条遮挡 |
-| 行检视联动 | 点任意一行即更新右侧检视，不跳页；搜索后按原始行索引回填，检视内容不会串位 |
+| 行检视联动 | 点任意一行即更新右侧检视，不跳页；选中项由基金代码派生，刷新或前进/后退不会出现「左侧选中 A、右侧显示 B」 |
 | 不可用状态 | 收益不可用时给出带原因的说明块，不隐藏列、不伪装成零收益 |
 | 主动留白处理 | 收紧卡片与图表高度，把表格下方的空白换成有语义的不可用说明，而非让表格被折叠线截断 |
 
@@ -131,7 +152,13 @@ npm run build
 Pop-Location
 ```
 
-本机验收环境为 Python 3.12.10 / Node.js 24.15.0；Python 测试 19 项通过，前端单测与浏览器关键流程通过，`npm ci` 安全审计为 0 项漏洞。CI 使用合成响应，不依赖外网基金数据。
+本机验收环境为 Python 3.12.10 / Node.js 24.15.0；Python 测试 34 项通过，前端单测 5 项与浏览器关键流程 1 项通过。测试建议带 `--basetemp`，避免本机累积的 pytest 临时目录触发清理保护：
+
+```powershell
+uv run --locked python -m pytest tests/ -q --basetemp=/tmp/fund-pytest
+```
+
+CI 使用合成响应，不依赖外网基金数据。
 
 ## 架构
 
@@ -147,14 +174,16 @@ flowchart LR
 
 ## 文档与发布状态
 
+- [v0.4.0 发布说明：指标口径与模拟数据边界修正](RELEASE_NOTES_v0.4.0.md)
+- [v0.4.0 上线前审计记录（含被推翻的判定）](docs/AUDIT_v0.4.0.md)
 - [v0.3.0 发布说明](RELEASE_NOTES_v0.3.0.md)
 - [数据来源与计算状态](docs/STATUS_v0.2.0.md)
 - [v0.2.1 发布说明](RELEASE_NOTES_v0.2.1.md)
 - [v0.2.0 发布说明](RELEASE_NOTES_v0.2.0.md)
 - [变更记录](CHANGELOG.md)
 
-v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.0)；v0.2.1 在功能代码不变的前提下补齐界面截图、图集与介绍，发布为 [v0.2.1 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.1)。v0.3.0 是纯前端布局重构版本，发布为 [v0.3.0 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.3.0)。两个项目的在线展示见[作品集首页](https://mahonghao1.github.io/)与[RoboData 深度页](https://mahonghao1.github.io/robodata/)。
+v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.0)；v0.2.1 在功能代码不变的前提下补齐界面截图、图集与介绍，发布为 [v0.2.1 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.1)。v0.3.0 是纯前端布局重构版本，发布为 [v0.3.0 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.3.0)。v0.4.0 是指标口径修正版本（无新功能），发布为 [v0.4.0 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.4.0)。两个项目的在线展示见[作品集首页](https://mahonghao1.github.io/)与[RoboData 深度页](https://mahonghao1.github.io/robodata/)。
 
 ## English
 
-A local portfolio analytics demo with a React and TypeScript frontend, a loopback-only FastAPI bridge, and Python analysis logic. It records NAV and benchmark provenance, labels synthetic holdings and simulated NAV, and keeps benchmark comparisons unavailable when the data does not support them. No account connection, trading, or investment advice is provided. v0.2.1 adds verified UI screenshots and a fuller walkthrough without changing the application code. v0.3.0 rebuilds the UI as a fixed 16:9 workbench (48px header, 216px sidebar, fluid main area, 320px inspector, 34px status bar) with a full-width 32px table and row-linked inspection; API contracts, Python analytics, data provenance and the validated scope are unchanged.
+A local portfolio analytics demo with a React and TypeScript frontend, a loopback-only FastAPI bridge, and Python analysis logic. It records NAV and benchmark provenance, labels synthetic holdings and simulated NAV, and keeps benchmark comparisons unavailable when the data does not support them. No account connection, trading, or investment advice is provided. v0.3.0 rebuilds the UI as a fixed 16:9 workbench (48px header, 216px sidebar, fluid main area, 320px inspector, 34px status bar) with a full-width 32px table and row-linked inspection. **v0.4.0 is a correctness release with no new features**: it fixes interval returns that always showed the one-year figure, drawdown peaks that ignored highs outside the window, synthetic NAV being used to project holdings, and the frontend computing returns from simulated data that the backend had deliberately marked unavailable. It also stops `nan` literals from reaching HTML reports and AI prompts, keeps unscored rows visible instead of silently filtering them out, and sanitises local paths out of error responses.

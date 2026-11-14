@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 
 const EChartsCore = lazy(() => import('./EChartsCore'));
 
-export default function Chart(props: { option: object; style?: CSSProperties; notMerge?: boolean; lazyUpdate?: boolean }) {
+export default function Chart(props: { option: object; style?: CSSProperties; label?: string; lazyUpdate?: boolean }) {
   const host = useRef<HTMLDivElement>(null);
   const [nearViewport, setNearViewport] = useState(false);
 
@@ -22,7 +22,8 @@ export default function Chart(props: { option: object; style?: CSSProperties; no
   }, []);
 
   const style = props.style || {};
-  return <div ref={host} className="chart-loading-frame" style={style} aria-label="数据图表">
+  // 外层只做布局容器，不再重复宣告 role=img；真正的图表语义由 EChartsCore 承担。
+  return <div ref={host} className="chart-loading-frame" style={style}>
     {nearViewport ? <Suspense fallback={<div className="chart-loading">正在加载图表…</div>}><EChartsCore {...props} /></Suspense>
       : <div className="chart-loading" aria-hidden="true" />}
   </div>;

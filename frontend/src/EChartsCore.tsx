@@ -10,11 +10,11 @@ use([BarChart, LineChart, PieChart, GridComponent, LegendComponent, TooltipCompo
 interface Props {
   option: object;
   style?: CSSProperties;
-  notMerge?: boolean;
+  label?: string;
   lazyUpdate?: boolean;
 }
 
-export default function EChartsCore({ option, style, notMerge, lazyUpdate }: Props) {
+export default function EChartsCore({ option, style, label, lazyUpdate }: Props) {
   const elementRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ECharts | null>(null);
 
@@ -32,9 +32,10 @@ export default function EChartsCore({ option, style, notMerge, lazyUpdate }: Pro
     };
   }, []);
 
+  // 用合并模式而不是 notMerge：每渲染都全量重绘会让曲线闪一下，也白扔掉 ECharts 的 diff。
   useEffect(() => {
-    chartRef.current?.setOption(option as EChartsCoreOption, { notMerge, lazyUpdate });
-  }, [option, notMerge, lazyUpdate]);
+    chartRef.current?.setOption(option as EChartsCoreOption, { lazyUpdate });
+  }, [option, lazyUpdate]);
 
-  return <div ref={elementRef} role="img" aria-label="数据图表" style={style} />;
+  return <div ref={elementRef} role="img" aria-label={label || '数据图表'} style={style} />;
 }

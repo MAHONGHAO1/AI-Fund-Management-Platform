@@ -11,6 +11,16 @@ import pandas as pd
 
 @dataclass(frozen=True)
 class DataProvenance:
+    """数据来源凭据。
+
+    字段语义务必分清，别混用：
+    - `available`：是否拿到了**可绘制**的数据。模拟净值也是 True——它有曲线可以画。
+    - 指标是否可用**不**由 `available` 表达。模拟净值虽然 available=True，
+      但收益/回撤/波动/夏普必须全部不可用，由 `source == "模拟数据"` 或行上的
+      `指标可用` 字段裁决（见 `fund_service.fund_history` 的 `metrics_available`）。
+    - `available=True` 也**不**代表区间长度足够；区间是否够看 `truncated` / `history_capped`。
+    """
+
     requested_source: str
     source: str
     data_date: str | None

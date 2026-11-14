@@ -27,6 +27,11 @@ _PORTFOLIO = {
 
 
 def public_value(value: Any):
+    """响应体统一出口：把非有限 float / NaN / pd.NA 收敛成 None，前端据此显示「不可用」。
+
+    内部计算仍用 float("nan") 作哨兵（数值列要保持 float dtype 才能排序和喂 plotly），
+    但绝不允许 NaN 越过这一层——报告文本、JSON 响应都必须在这里变成 null。
+    """
     if isinstance(value, dict):
         return {str(key): public_value(item) for key, item in value.items() if key != "评分回测样本"}
     if isinstance(value, (list, tuple)):
@@ -113,16 +118,29 @@ def fund_history(code: str, days: int = 365) -> dict:
     row = next((item for item in analysis_rows() if item["代码"] == code), None)
     if row is None:
         raise KeyError("当前组合中没有该基金")
-    nav, nav_source = advisor.fetch_nav_history_with_provenance(code)
+    # 回看窗口跟着请求区间走：否则「近 3 年 / 全部」只能拿到 460 天数据却被当成完整区间。
+    lookback = 3650 if days <= 0 else max(460, min(int(days) + 45, 3650))
+    nav, nav_source = advisor.load_nav_history_cached(code, lookback, state["refresh_token"])
+    if nav.empty:
+        raise KeyError("该基金没有可用的净值记录")
+    available_start = nav["date"].min()
+    available_end = nav["date"].max()
+    available_days = int((available_end - available_start).days)
+    # 「全部」没有「请求区间」这个概念，requested_days 必须留空；
+    # 用 3650 顶上去会让所有成立不足 10 年的基金都误报「数据不完整」。
+    requested_days = int(days) if days > 0 else None
+
     benchmark = pd.DataFrame(columns=["date", "nav"])
     benchmark_source = row.get("基准来源信息", {})
     if nav_source.source != "模拟数据":
         fund_type = advisor.classify_fund(row["基金名称"])
         benchmark_key = advisor.benchmark_for_fund(row["基金名称"], fund_type)
-        benchmark, benchmark_provenance = advisor.load_benchmark_history(benchmark_key, state["refresh_token"])
+        benchmark, benchmark_provenance = advisor.load_benchmark_history(
+            benchmark_key, state["refresh_token"], lookback
+        )
         benchmark_source = benchmark_provenance.as_dict()
-    if days > 0 and not nav.empty:
-        cutoff = nav["date"].max() - pd.Timedelta(days=days)
+    if days > 0:
+        cutoff = available_end - pd.Timedelta(days=days)
         nav = nav.loc[nav["date"] >= cutoff]
         if not benchmark.empty:
             benchmark = benchmark.loc[benchmark["date"] >= cutoff]
@@ -134,6 +152,19 @@ def fund_history(code: str, days: int = 365) -> dict:
         "nav_provenance": nav_source.as_dict(),
         "benchmark_provenance": benchmark_source,
         "benchmark_available": not benchmark.empty and bool(benchmark_source.get("available", True)),
+        # 区间覆盖度：前端据此说明「请求 3 年但数据源只有 N 天」，不把截断当成完整区间。
+        "requested_days": requested_days,
+        "available_days": available_days,
+        "coverage_start": available_start.strftime("%Y-%m-%d"),
+        "coverage_end": available_end.strftime("%Y-%m-%d"),
+        "truncated": bool(requested_days and available_days + 10 < requested_days),
+        # 「全部」页的另一种不确定性：数据正好顶满 10 年回看上限，更早的记录可能没取到。
+        # 这与「基金成立时间短」是两件事，必须分开表达，不能混成一个 truncated。
+        "history_capped": bool(days <= 0 and available_days + 10 >= lookback),
+        "lookback_days": lookback,
+        # 指标可用性由后端裁决：前端不再自行比对来源字符串，避免两端口径漂移。
+        "synthetic": nav_source.source == "模拟数据",
+        "metrics_available": nav_source.source != "模拟数据" and row.get("指标可用") is not False,
     })
 
 
