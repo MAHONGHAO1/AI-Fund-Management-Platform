@@ -82,6 +82,14 @@ def create_app() -> FastAPI:
     def health():
         return {"status": "ok", "app": "AI 智选基金助手", "version": "0.4.0", "scope": "loopback"}
 
+    @app.get("/api/data-sources")
+    def data_sources():
+        """跨次的数据源健康表；判定口径见 docs/DATA_SOURCES.md。"""
+        from fund_health import load_entries, summarize
+        entries = load_entries()
+        return {"sources": summarize(entries), "record_count": len(entries),
+                "note": "连续失败达到 2 次标为 degraded；模拟数据不是真实来源，只作兜底。"}
+
     @app.get("/api/portfolio")
     def portfolio():
         return fund_service.get_portfolio()

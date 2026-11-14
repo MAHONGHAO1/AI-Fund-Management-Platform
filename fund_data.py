@@ -68,16 +68,21 @@ def load_nav_series(
     mock_factory: Callable[[str], pd.DataFrame],
 ) -> tuple[pd.DataFrame, DataProvenance]:
     """Try public sources in order and retain each failure in fallback evidence."""
+    from fund_health import record as record_attempt
+
     errors: list[str] = []
     requested = "、".join(name for name, _ in fetchers)
     for source, fetcher in fetchers:
         try:
             data = normalize_nav_history(fetcher(code), source)
+            record_attempt(source, code, True)
             return data, DataProvenance(requested, source, _data_date(data))
         except Exception as exc:
             errors.append(f"{source}: {exc}")
+            record_attempt(source, code, False, str(exc))
     reason = "；".join(errors)
     mock = normalize_nav_history(mock_factory(code), "模拟数据")
+    record_attempt("模拟数据", code, False, reason)
     return mock, DataProvenance(requested, "模拟数据", _data_date(mock),
                                 "synthetic", reason, True)
 
@@ -89,19 +94,25 @@ def load_benchmark_series(
     fallback_fetcher: Callable[[str], pd.DataFrame],
 ) -> tuple[pd.DataFrame, DataProvenance]:
     """Load a benchmark with an explicit fallback, or return unavailable evidence."""
+    from fund_health import record as record_attempt
+
     errors: list[str] = []
     try:
         data = normalize_nav_history(primary_fetcher(requested_key), requested_key)
+        record_attempt(requested_key, requested_key, True)
         return data, DataProvenance(requested_key, requested_key, _data_date(data))
     except Exception as exc:
         errors.append(f"{requested_key}: {exc}")
+        record_attempt(requested_key, requested_key, False, str(exc))
     if fallback_key != requested_key:
         try:
             data = normalize_nav_history(fallback_fetcher(fallback_key), fallback_key)
+            record_attempt(fallback_key, requested_key, True)
             return data, DataProvenance(requested_key, fallback_key, _data_date(data),
                                         "fallback", "；".join(errors), True)
         except Exception as exc:
             errors.append(f"{fallback_key}: {exc}")
+            record_attempt(fallback_key, requested_key, False, str(exc))
     return pd.DataFrame(columns=["date", "nav"]), DataProvenance(
         requested_key, "不可用", None, "unavailable", "；".join(errors), False
     )
