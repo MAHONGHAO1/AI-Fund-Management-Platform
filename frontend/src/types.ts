@@ -53,6 +53,24 @@ export interface FundHistory {
   lookback_days: number;
 }
 
+export interface DataSourceHealth {
+  source: string;
+  attempts: number;
+  succeeded: number;
+  failed: number;
+  last_succeeded_at: string | null;
+  last_failed_at: string | null;
+  consecutive_failures: number;
+  degraded: boolean;
+  last_reason: string;
+}
+
+export interface DataSourceHealthResponse {
+  sources: DataSourceHealth[];
+  record_count: number;
+  note: string;
+}
+
 export interface Advice {
   code: string;
   short: string;

@@ -58,6 +58,26 @@ def test_empty_log_summarizes_to_nothing():
     assert fund_health.load_entries() == []
 
 
+def test_api_data_sources_returns_the_shape_the_frontend_reads(isolated_log):
+    from fastapi.testclient import TestClient
+    from fund_web import create_app
+
+    fund_health.record("东方财富", "000001", True)
+    fund_health.record("AkShare", "000001", False, "接口 500")
+    fund_health.record("AkShare", "000002", False, "字段不符预期")
+
+    payload = TestClient(create_app()).get("/api/data-sources").json()
+    assert payload["record_count"] == 3
+    rows = {row["source"]: row for row in payload["sources"]}
+    assert set(rows) == {"东方财富", "AkShare"}
+    assert rows["AkShare"]["degraded"] is True
+    assert rows["AkShare"]["consecutive_failures"] == 2
+    assert rows["东方财富"]["degraded"] is False
+    for row in payload["sources"]:
+        assert {"attempts", "succeeded", "failed", "last_succeeded_at",
+                "consecutive_failures", "degraded", "last_reason"} <= set(row)
+
+
 def test_load_nav_series_records_every_attempt(isolated_log):
     calls = []
 

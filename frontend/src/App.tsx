@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactECharts from './Chart';
 import { Activity, ArrowDownToLine, BarChart3, Check, ChevronRight, CircleAlert, Database, RefreshCw, Search, Settings2, ShieldCheck, Sparkles } from 'lucide-react';
 import { api } from './api';
-import type { Advice, Analysis, FundHistory, FundRow, Holding, Portfolio } from './types';
+import type { Advice, Analysis, DataSourceHealthResponse, FundHistory, FundRow, Holding, Portfolio } from './types';
 
 type ViewKey = 'portfolio' | 'analysis' | 'sources';
 const views: Record<ViewKey, string> = { portfolio: '组合总览', analysis: '绩效分析', sources: '数据与说明' };
@@ -55,6 +55,39 @@ function SourceBadge({ value }: { value?: string }) {
   return <span className={`source-badge ${tone}`}>{text}</span>;
 }
 
+function healthDate(value: string | null | undefined) {
+  if (!value) return '无记录';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? String(value).slice(0, 10) : parsed.toISOString().slice(0, 10);
+}
+
+function SourceHealthPanel({ payload }: { payload: DataSourceHealthResponse | null }) {
+  // 接口没数据、或返回结构不是预期的，都要给出可读的空状态，不能整页崩掉。
+  const sources = Array.isArray(payload?.sources) ? payload!.sources : [];
+  const degraded = sources.filter((item) => item.degraded && item.last_reason);
+  return <section className="fund-panel">
+    <PanelTitle title="数据源健康" note="每次取数都留痕，连续失败两次标为降级" />
+    {sources.length === 0
+      ? <p className="insp-warn">还没有跨次的取数记录。跑一次分析后，这里会按来源累计成功与失败。</p>
+      : <div className="table-overflow">
+          <table className="holdings-table">
+            <thead><tr><th>来源</th><th>尝试</th><th>成功 / 失败</th><th>连续失败</th><th>最近成功</th><th>状态</th></tr></thead>
+            <tbody>{sources.map((item) => <tr key={item.source}>
+              <td><strong>{item.source}</strong></td>
+              <td>{item.attempts}</td>
+              <td>{item.succeeded} / {item.failed}</td>
+              <td>{item.consecutive_failures}</td>
+              <td>{healthDate(item.last_succeeded_at)}</td>
+              <td>{item.degraded
+                ? <span className="source-badge unavailable">降级</span>
+                : <span className="source-badge live">正常</span>}</td>
+            </tr>)}</tbody>
+          </table>
+          {degraded.length > 0 && <p className="insp-warn">降级原因：{degraded.map((item) => `${item.source}：${item.last_reason}`).join('；')}</p>}
+        </div>}
+  </section>;
+}
+
 // 颜色只读一次 CSS 变量；option 合并结果按 option 引用缓存，避免每次渲染都 setOption 全量重绘。
 function CardChart({ option, height = 270, label, summary }: { option: object; height?: number; label?: string; summary?: string }) {
   const colors = useMemo(() => [
@@ -100,6 +133,7 @@ function App() {
   const [apiKey, setApiKey] = useState('');
   const [advice, setAdvice] = useState<Advice | null>(null);
   const [inspectorHidden, setInspectorHidden] = useState(false);
+  const [sourceHealth, setSourceHealth] = useState<DataSourceHealthResponse | null>(null);
 
   const analysisRef = useRef<Analysis | null>(null);
   const selectedCodeRef = useRef(initial.code);
@@ -136,6 +170,15 @@ function App() {
     window.addEventListener('popstate', handlePop);
     return () => window.removeEventListener('popstate', handlePop);
   }, []);
+
+  useEffect(() => {
+    if (view !== 'sources') return;
+    let alive = true;
+    api.sourceHealth()
+      .then((result) => { if (alive) setSourceHealth(result); })
+      .catch(() => { if (alive) setSourceHealth(null); });
+    return () => { alive = false; };
+  }, [view, portfolio?.refresh_token]);
 
   useEffect(() => {
     let alive = true;
@@ -426,6 +469,7 @@ function App() {
 
         {view === 'sources' && <section className="fund-stack">
           <section className="source-overview"><div><span>当前净值数据</span><strong>{Object.entries(sourceCounts).map(([key, count]) => `${key} ${count}`).join(' · ') || '读取中'}</strong><small>每只基金单独记录使用的数据源</small></div><div><span>最新数据日期</span><strong>{analysis.summary.as_of || '不可用'}</strong><small>数据日期以各条净值记录为准</small></div><div><span>当前组合类型</span><strong>{synthetic ? '合成示例' : '本次会话自定义'}</strong><small>应用不会写入真实账户信息</small></div></section>
+          <SourceHealthPanel payload={sourceHealth} />
           <div className="sources-grid"><section className="fund-panel"><PanelTitle title="基金净值来源" note="数据加载失败会明确记录回退原因" />{analysis.rows.map((row) => <ProvenanceCard key={row.代码} title={`${row.基金名称} · ${row.代码}`} provenance={row.净值来源信息} compact />)}</section>
             <section className="fund-panel"><PanelTitle title="计算口径与边界" note="用于理解演示输出，不构成投资建议" />
               <div className="method-list"><div><strong>收益率</strong><p>按可用净值序列和区间首尾净值计算；数据不足时显示不可用。</p></div><div><strong>最大回撤与波动</strong><p>依据基金历史净值计算。模拟净值会保留“模拟数据”标记。</p></div><div><strong>基准与超额</strong><p>只有基金净值与基准来源都可用时才计算；模拟净值不生成貌似真实的比较结果。</p></div><div><strong>持仓数据</strong><p>默认金额和收益为虚构示例；编辑内容仅保存在当前服务进程内存。</p></div><div><strong>API Key</strong><p>只由浏览器内存持有，随单次请求发送，不写入本地文件或服务日志。</p></div></div>

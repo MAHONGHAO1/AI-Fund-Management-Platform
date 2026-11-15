@@ -1,4 +1,4 @@
-import type { Advice, Analysis, FundHistory, FundRow, Holding, Portfolio } from './types';
+import type { Advice, Analysis, DataSourceHealthResponse, FundHistory, FundRow, Holding, Portfolio } from './types';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -13,6 +13,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => request<{ status: string; version: string }>('/api/health'),
+  sourceHealth: () => request<DataSourceHealthResponse>('/api/data-sources'),
   portfolio: () => request<Portfolio>('/api/portfolio'),
   analysis: () => request<Analysis>('/api/analysis'),
   updatePortfolio: (holdings: Holding[]) => request<Portfolio>('/api/portfolio', { method: 'PUT', body: JSON.stringify({ holdings }) }),

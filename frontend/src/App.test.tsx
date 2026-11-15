@@ -101,8 +101,7 @@ describe('Fund dashboard', () => {
     expect(screen.getByText('模拟净值不计算波动率')).toBeInTheDocument();
   });
 
-  it('真实组合里出现模拟净值时仍然给出提示', async () => {
-    window.history.replaceState(null, '', '/?view=portfolio');
+  it('真实组合里出现模拟净值时仍然给出提示', async () => {    window.history.replaceState(null, '', '/?view=portfolio');
     const rows = [{ 基金名称: '示例基金', 代码: '000001', 基金类型: '科技', 数据来源: '模拟数据',
       最新净值日期: '2026-01-01', 当前持有金额: 1000, 累计收益: 0, '综合评分(0-10)': null,
       近1年收益率: null, 近1年最大回撤: null, 基准可用: false }];
@@ -116,5 +115,50 @@ describe('Fund dashboard', () => {
     render(<App />);
     expect(await screen.findByText('有 1 / 1 只基金使用模拟净值')).toBeInTheDocument();
     expect(screen.getByText('组合平均评分')).toBeInTheDocument();
+  });
+
+  it('数据与说明页按来源展示跨次健康记录，并标出降级原因', async () => {
+    window.history.replaceState(null, '', '/?view=sources');
+    const rows = [{ 基金名称: '示例基金', 代码: '000001', 基金类型: '科技', 数据来源: '东方财富',
+      最新净值日期: '2026-01-01', 当前持有金额: 1000, 累计收益: 0, '综合评分(0-10)': null,
+      近1年收益率: null, 近1年最大回撤: null, 基准可用: false }];
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const body = url.endsWith('/api/portfolio')
+        ? { holdings: [{ code: '000001', name: '示例基金', amount: 1000, hold_ret: 0, cum_profit: 0 }], synthetic: false, snapshot_date: '2026-01-01', auto_update_holdings: false, refresh_token: 0 }
+        : url.endsWith('/api/data-sources')
+          ? { sources: [
+              { source: '东方财富', attempts: 5, succeeded: 4, failed: 1, last_succeeded_at: '2026-11-15T01:00:00Z', last_failed_at: '2026-11-14T01:00:00Z', consecutive_failures: 0, degraded: false, last_reason: '' },
+              { source: 'AkShare', attempts: 3, succeeded: 0, failed: 3, last_succeeded_at: null, last_failed_at: '2026-11-15T01:00:00Z', consecutive_failures: 3, degraded: true, last_reason: 'AkShare 返回空数据' },
+            ], record_count: 8, note: '连续失败达到 2 次标为 degraded' }
+          : { rows, summary: { fund_count: 1, total_amount: 1000, total_profit: 0, average_score: null, source_counts: { 东方财富: 1 }, as_of: '2026-01-01' } };
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }));
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: '数据源健康' })).toBeInTheDocument();
+    expect(await screen.findByText('降级')).toBeInTheDocument();
+    expect(screen.getByText(/AkShare 返回空数据/)).toBeInTheDocument();
+    expect(screen.getByText('2026-11-15')).toBeInTheDocument();
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('数据源接口还没有记录时给出空状态，不把空表当全部正常', async () => {
+    window.history.replaceState(null, '', '/?view=sources');
+    const rows = [{ 基金名称: '示例基金', 代码: '000001', 基金类型: '科技', 数据来源: '东方财富',
+      最新净值日期: '2026-01-01', 当前持有金额: 1000, 累计收益: 0, '综合评分(0-10)': null,
+      近1年收益率: null, 近1年最大回撤: null, 基准可用: false }];
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const body = url.endsWith('/api/portfolio')
+        ? { holdings: [{ code: '000001', name: '示例基金', amount: 1000, hold_ret: 0, cum_profit: 0 }], synthetic: false, snapshot_date: '2026-01-01', auto_update_holdings: false, refresh_token: 0 }
+        : url.endsWith('/api/data-sources')
+          ? { sources: [], record_count: 0, note: '' }
+          : { rows, summary: { fund_count: 1, total_amount: 1000, total_profit: 0, average_score: null, source_counts: { 东方财富: 1 }, as_of: '2026-01-01' } };
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }));
+    render(<App />);
+    expect(await screen.findByText(/还没有跨次的取数记录/)).toBeInTheDocument();
+    expect(screen.queryByText('降级')).not.toBeInTheDocument();
+    window.history.replaceState(null, '', '/');
   });
 });
