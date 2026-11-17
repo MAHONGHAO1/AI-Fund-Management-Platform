@@ -1,14 +1,16 @@
-# 基金观察 · AI 智选基金助手
+# 基金观察 · Fund Lens
 
 **先说清每个数字从哪来，再谈收益。**
 
-v0.4.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户
+v0.5.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户
 
-[![tests](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml/badge.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml) [![release](https://img.shields.io/badge/release-v0.4.0-blue.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.4.0) [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![portfolio](https://img.shields.io/badge/portfolio-live-1677ff.svg)](https://mahonghao1.github.io/)
+[![tests](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml/badge.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml) [![release](https://img.shields.io/badge/release-v0.5.0-blue.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.5.0) [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![portfolio](https://img.shields.io/badge/portfolio-live-1677ff.svg)](https://mahonghao1.github.io/)
 
 基金 App 上那个「近一年收益 12.4%」，你信吗？它可能是三年前某天的净值算出来的，也可能中途中止过计算，只是没告诉你。
 
 这个工作台换个顺序：**先回答这个数能不能用，再把这个数给你**。每只基金的净值来源、取数日期、回退原因都逐条摊开；数据撑不起这个区间，就写「不可用」，不拿 0.00% 糊过去。
+
+> **60 秒证据**：版本链（README / `pyproject.toml` / API / 前端）由测试锁定；后端、前端单测与浏览器流程均通过；离线模式不发起外网请求。复现命令、测试数量、环境与截图来源统一放在 [docs/EVIDENCE.md](docs/EVIDENCE.md)。AI 只解释已算好的指标，不选基、不改评分；边界与评测见 [docs/AI_LAYER.md](docs/AI_LAYER.md)。
 
 ![v0.3.0 工作台：固定 Shell、KPI 四卡、全宽持仓表、右侧检视与底部口径状态条](docs/screenshots/app_v0.3.0.png)
 
@@ -63,9 +65,9 @@ v0.2.x 的截图与录像对应旧的长页布局，留作迭代对照；当前�
 - **绩效与风险**：收益、回撤、波动率和净值历史；缺失或样本不足的指标显示不可用，不用零值代替。
 - **来源说明**：基金净值和基准分别记录来源、数据日期、回退状态与失败原因，页面与 Markdown / HTML 报告同步呈现。
 - **数据源健康**：每次取数尝试都留痕。「数据与说明」页按来源累计成功 / 失败次数、连续失败数和最近成功时间，连续失败两次标为降级并写出原因；没有记录时显示空状态，不把空表当「全部正常」。
-- **Python 核心**：数据加载、净值标准化、风险计算、相对评分与 AI 文本生成。
-- **本地 AI 回退**：无密钥时走本地规则并显示模式与免责声明；有密钥时只随当前建议请求传递，不落盘、不写日志。
-- **验证**：后端 41 项测试、前端 7 项单测、1 项浏览器流程；覆盖公开数据源响应与异常、无效净值、回退、收益与回撤口径、离线不联网、报告标识与 API 行为。
+- **Python 核心**：数据加载、净值标准化、风险计算与相对评分；AI 只写解释文本，不参与筛选、评分或指标计算。
+- **可选 AI 文本层**：无密钥、调用失败或输出越界时走本地模板并显示模式；有密钥时只随当前请求传递，不落盘、不写日志。输出不得出现交易指令词，引用数值必须与表格一致，否则整段回退。见 [AI 层边界与离线评测](docs/AI_LAYER.md)。
+- **验证**：后端、前端单测与浏览器流程均通过；覆盖公开数据源响应与异常、无效净值、回退、收益与回撤口径、离线不联网、报告标识、AI 边界与 API 行为。测试数量与原始汇总见 [docs/EVIDENCE.md](docs/EVIDENCE.md)。
 
 默认持仓是合成数据，不连接真实账户、不提交交易、不提供投资建议。离线模拟净值只用于演示产品流程，任何图表、评分、收益数字或 AI 文本都不构成投资结论。
 
@@ -125,7 +127,7 @@ npm run build
 Pop-Location
 ```
 
-本机验收环境为 Python 3.12.10 / Node.js 24.15.0；Python 测试 34 项通过，前端单测 5 项与浏览器关键流程 1 项通过。测试建议带 `--basetemp`，避免本机累积的 pytest 临时目录触发清理保护：
+本机验收环境为 Python 3.12.10 / Node.js 24；Python 测试、前端单测与浏览器关键流程均通过。逐项环境、数量与原始汇总见 [docs/EVIDENCE.md](docs/EVIDENCE.md)。测试建议带 `--basetemp`，避免本机累积的 pytest 临时目录触发清理保护：
 
 ```powershell
 uv run --locked python -m pytest tests/ -q --basetemp=/tmp/fund-pytest
@@ -194,7 +196,10 @@ flowchart LR
 
 ## 文档与发布状态
 
+- [证据总表](docs/EVIDENCE.md)：版本链、测试命令与本轮原始汇总、截图来源、AI 边界和未验证事项
+- [AI 层边界与离线评测](docs/AI_LAYER.md)：AI 只解释已算好的指标；两道输出校验与四个固定用例
 - [数据源与回退口径](docs/DATA_SOURCES.md)：取数顺序、四个回退状态的判定、真实会遇到的失效形态，以及**目前还没有历史故障记录**这个缺口
+- [v0.5.0 发布说明：命名、版本链与 AI 边界收口](RELEASE_NOTES_v0.5.0.md)
 - [v0.4.0 发布说明：指标口径与模拟数据边界修正](RELEASE_NOTES_v0.4.0.md)
 - [v0.4.0 上线前审计记录（含被推翻的判定）](docs/AUDIT_v0.4.0.md)
 - [v0.3.0 发布说明](RELEASE_NOTES_v0.3.0.md)

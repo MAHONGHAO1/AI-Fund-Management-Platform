@@ -1,4 +1,4 @@
-"""Loopback-only local API and frontend host for AI Fund Management Platform."""
+"""Loopback-only local API and frontend host for Fund Lens."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ def _safe_error(exc: Exception, label: str) -> str:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="AI Fund local workbench", version="0.4.0", docs_url=None, redoc_url=None)
+    app = FastAPI(title="Fund Lens local workbench", version="0.5.0", docs_url=None, redoc_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
     @app.middleware("http")
@@ -80,7 +80,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "app": "AI 智选基金助手", "version": "0.4.0", "scope": "loopback"}
+        return {"status": "ok", "app": "基金观察 · Fund Lens", "version": "0.5.0", "scope": "loopback"}
 
     @app.get("/api/data-sources")
     def data_sources():

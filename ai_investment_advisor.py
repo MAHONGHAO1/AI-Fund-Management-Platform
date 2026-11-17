@@ -45,8 +45,6 @@ def bootstrap_streamlit() -> None:
     raise SystemExit
 
 
-bootstrap_streamlit()
-
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -55,14 +53,6 @@ import requests
 import streamlit as st
 from fund_data import DataProvenance, load_benchmark_series, load_nav_series, normalize_nav_history
 from openai import OpenAI
-
-
-st.set_page_config(
-    page_title="AI 智选基金助手",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
 
 
 FUNDS = [
@@ -1013,59 +1003,34 @@ def apply_composite_scores(rows: list[dict[str, Any]]) -> None:
 
 
 def mock_short_advice(name: str, ret_1y: float, mdd: float, hold_ret: float) -> str:
+    """Describe the supplied metrics without issuing a trade instruction."""
     if not math.isnan(ret_1y) and ret_1y > 15 and abs(mdd) < 20:
-        return "表现较强且回撤可控，可继续持有，盈利较多时分批止盈。"
+        return "近一年收益为正且回撤相对可控；这是历史数据描述，不构成买卖指令。"
     if not math.isnan(ret_1y) and ret_1y < -10:
-        return "近一年偏弱，若持仓亏损扩大，应控制仓位并设止损。"
+        return "近一年收益为负；历史表现不代表未来，不构成买卖指令。"
     if hold_ret > 10:
-        return "持有已有收益，可保留底仓，考虑分批止盈锁定利润。"
-    return "表现中性，建议继续观察，结合仓位和风险承受力调整。"
-
-
-def trend_label(ret_1m: float, ret_3m: float) -> str:
-    if math.isnan(ret_1m) or math.isnan(ret_3m):
-        return "震荡"
-    if ret_1m > 3 and ret_3m > 5:
-        return "看涨"
-    if ret_1m < -3 and ret_3m < -5:
-        return "看跌"
-    return "震荡"
+        return "当前持仓存在历史浮盈；浮盈不决定后续走势，不构成止盈指令。"
+    return "指标处于中性区间；这里只描述历史数据，不构成操作建议。"
 
 
 def mock_detailed_advice(row: dict[str, Any]) -> str:
+    """Build a deterministic, metric-bound explanation for offline use."""
     ret_1m = to_float(row["近1月收益率"])
     ret_3m = to_float(row["近3月收益率"])
     ret_1y = to_float(row["近1年收益率"])
     mdd = to_float(row["近1年最大回撤"])
     score = to_float(row["综合评分(0-10)"])
     hold_ret = to_float(row["当前持有收益率"])
-    trend = trend_label(ret_1m, ret_3m)
-
-    if score >= 8 and hold_ret > 20:
-        action = "部分止盈，建议卖出 20%-30%，保留底仓继续跟踪。"
-    elif score >= 7:
-        action = "继续持有；若回调后趋势未破坏，可小比例逢低加仓。"
-    elif score >= 5:
-        action = "继续观察，控制仓位，不建议追涨。"
-    elif hold_ret < -8 or ret_1m < -8:
-        action = "止损清仓或明显减仓，等待趋势企稳后再评估。"
-    else:
-        action = "降低仓位，优先保留流动性。"
-
-    if score >= 7:
-        investor = "平衡型/激进型，建议持有期限 3-12 个月。"
-    elif score >= 5:
-        investor = "平衡型，建议持有期限 1-6 个月。"
-    else:
-        investor = "激进型小仓位观察；保守型建议回避或降低仓位。"
 
     return (
-        f"【市场趋势判断】近1月收益率 {fmt_pct(ret_1m)}，近3月收益率 {fmt_pct(ret_3m)}，"
-        f"未来1-4周倾向于{trend}。\n\n"
-        f"【具体操作建议】{action}\n\n"
-        f"【风险提示】1. 最大回撤 {fmt_pct(mdd)}，波动风险不可忽视；"
-        f"2. 近1年收益率 {fmt_pct(ret_1y)} 不代表未来收益；3. 主题基金需关注估值、政策和汇率等变化。\n\n"
-        f"【适合人群】{investor}"
+        f"【数据观察】近1月收益率 {fmt_pct(ret_1m)}，近3月收益率 {fmt_pct(ret_3m)}，"
+        f"近1年收益率 {fmt_pct(ret_1y)}；综合评分 {fmt_score(score)}。"
+        "以上均为历史区间计算值，不用于预测未来走势。\n\n"
+        "【边界】本说明不给出交易方向、交易比例、价格目标或择时判断，也不改变组合、评分和持仓。\n\n"
+        f"【风险提示】1. 近1年最大回撤 {fmt_pct(mdd)}，历史回撤不代表未来最大损失；"
+        f"2. 当前持有收益率 {fmt_pct(hold_ret)} 只是持仓快照，不构成任何操作理由；"
+        "3. 数据可能因来源回退或区间不足而不可用，使用前请先核对来源与日期。\n\n"
+        "【适用性】仅用于理解当前表格中的历史指标，不适合作为个人投资决策的唯一依据。"
     )
 
 
@@ -1099,14 +1064,22 @@ def advice_numbers_are_consistent(text: str, row: dict[str, Any], tolerance: flo
     return True
 
 
+TRADE_INSTRUCTION_TERMS = ("买入", "卖出", "加仓", "减仓", "止盈", "止损", "清仓", "目标价")
+
+
+def advice_respects_boundaries(text: str) -> bool:
+    """The AI layer explains data; it must not turn into a trade instruction."""
+    return not any(term in str(text or "") for term in TRADE_INSTRUCTION_TERMS)
+
+
 def validated_advice(short_text: str, detail_text: str, row: dict[str, Any], fallback_short: str,
                      fallback_detail: str, *, notify: bool = True) -> tuple[str, str]:
     merged = f"{short_text}\n{detail_text}"
-    if not advice_numbers_are_consistent(merged, row):
+    if not advice_numbers_are_consistent(merged, row) or not advice_respects_boundaries(merged):
         if notify:
             show_notice_once(
-                f"ai_advice_metric_mismatch_{row['代码']}",
-                f"{row['基金名称']} 的 AI 建议引用数据与表格不一致，已改用本地校验文案。",
+                f"ai_advice_boundary_{row['代码']}",
+                f"{row['基金名称']} 的 AI 文本引用了不一致的数据或越出解释边界，已改用本地校验文案。",
                 "warning",
             )
         return fallback_short, ensure_ai_disclaimer(fallback_detail)
@@ -1187,7 +1160,7 @@ def call_qwen_advice_pair(
             max_retries=0,
         )
         prompt = f"""
-请基于以下基金数据，输出中文建议，不承诺收益。
+请基于以下基金数据，输出中文数据解释。你不是投资顾问，不承诺收益。
 基金名称：{row["基金名称"]}
 代码：{row["代码"]}
 近1月收益率：{fmt_pct(to_float(row["近1月收益率"]))}
@@ -1205,20 +1178,21 @@ def call_qwen_advice_pair(
 
 请严格使用以下格式：
 【简短建议】
-用 50 字以内给出继续持有、止盈或止损建议。
+用 50 字以内概括这些历史指标说明了什么；不要给出买卖指令。
 
 【详细建议】
 控制在 300 字以内，必须包含四段：
-【市场趋势判断】判断未来1-4周走势：看涨/震荡/看跌。
-【具体操作建议】明确给出继续持有、部分止盈比例、逢低加仓或止损清仓。
-【风险提示】列出2-3个当前主要风险点。
-【适合人群】说明保守型/平衡型/激进型及持有期限建议。
+【数据观察】只解释上表中的历史指标，不预测未来走势。
+【边界】明确说明本说明不提供买卖方向、比例、目标价或择时判断。
+【风险提示】列出2-3个当前数据口径或历史指标的风险点。
+【适用性】说明这些指标适合用来理解什么、不适合用来做什么。
 禁止编造或改写上述数值；如引用收益率、回撤、波动率，必须与输入数据完全一致。
+禁止出现“买入”“卖出”“加仓”“减仓”“止盈”“止损”“清仓”“目标价”等交易指令。
 """.strip()
         response = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "你是谨慎、客观的基金组合分析助手。不要承诺收益。"},
+                {"role": "system", "content": "你是基金数据解释助手，不是投资顾问。不要给出交易指令或收益承诺。"},
                 {"role": "user", "content": prompt},
             ],
             temperature=0.3,
@@ -2243,6 +2217,12 @@ def render_holding_snapshot_settings() -> tuple[str, bool]:
 
 
 def main() -> None:
+    st.set_page_config(
+        page_title="基金观察 · Fund Lens（旧版 Streamlit）",
+        page_icon="📊",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
     inject_css()
     render_compliance_footer()
     if "refresh_token" not in st.session_state:
@@ -2263,7 +2243,8 @@ def main() -> None:
     if "auto_update_holdings" not in st.session_state:
         st.session_state.auto_update_holdings = True
 
-    st.sidebar.title("AI 智选基金助手")
+    st.sidebar.title("基金观察 · Fund Lens")
+    st.sidebar.caption("旧版 Streamlit 界面，仅作历史对照，不再新增功能。")
     with st.sidebar.expander("设置", expanded=False):
         glm_key_input = st.text_input(
             "GLM_API_KEY（智谱 BigModel，推荐）",
@@ -2337,8 +2318,8 @@ def main() -> None:
         st.session_state.refresh_token += 1
         st.rerun()
 
-    st.title("AI 智选基金助手 · v0.1.0")
-    st.caption("公开数据分析与组合工程演示；持仓默认使用虚构合成数据。")
+    st.title("基金观察 · Fund Lens（旧版 Streamlit）")
+    st.caption("公开数据分析与组合工程演示；持仓默认使用虚构合成数据。此界面冻结在 v0.1.0，不再随主版本更新。")
     st.info(
         "评分说明：各指标在当前基金池内转换为 0-10 百分位分；收益能力优先看相对比较基准的超额收益；"
         "权重按历史样本 IC/IR 估计，样本不足时回退默认权重。"
@@ -2415,4 +2396,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    bootstrap_streamlit()
     main()

@@ -1,5 +1,17 @@
 # 变更记录
 
+## v0.5.0（2026-11-18 发布）· 命名、版本链与 AI 边界收口
+
+**正确性与定位修复版本，无新基金功能。**
+
+- 产品统一为「基金观察 · Fund Lens」；移除 README / FastAPI / 健康检查 / 旧 Streamlit 中的「AI 智选基金助手」和「AI Fund」命名。
+- 版本链统一到 0.5.0：README、`pyproject.toml`、`fund_web.py`、`frontend/package.json`、`App.tsx`、发布说明；新增 `tests/test_version_consistency.py`。
+- README 测试数量不再自相矛盾：本轮后端 47 项、前端 7 项、浏览器 1 项，统一指向 `docs/EVIDENCE.md`。
+- AI 重新定位为可选文字解释层：本地模板不再给交易指令；提示词禁止预测走势和给出买卖比例 / 目标价 / 择时；新增交易指令词与数值一致性两道输出校验，越界即回退。
+- 修复模块导入副作用：`bootstrap_streamlit()` 原先在 import 时递归启动 Streamlit 服务并抓取真实净值，导致 pytest 收集挂起；现在只在直接运行时引导。
+- 新增 `docs/AI_LAYER.md`、`docs/EVIDENCE.md` 与 `tests/test_fund_ai_layer.py`。
+- 发布说明：[RELEASE_NOTES_v0.5.0.md](RELEASE_NOTES_v0.5.0.md)
+
 ## v0.4.0（2026-11-15 发布）
 
 **正确性修复版本，无新功能。** 修掉 4 个会给出错误数值的 P0 口径问题，以及一批 NaN 穿透与可用性缺陷。

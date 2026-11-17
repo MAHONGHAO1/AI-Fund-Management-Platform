@@ -3,7 +3,7 @@
 akshare==1.20.35 \
     --hash=sha256:4979b84b2941ded032fc989a0e6e78191282d472d4f9bcce29c84260fb2b2c31 \
     --hash=sha256:7851285ae1a101fe93b9087c479b2dd47b7a0832c6186d50c10d9681ddfedc06
-    # via ai-fund-management-platform
+    # via fund-lens
 altair==6.3.0 \
     --hash=sha256:7defb6ca730676dfc99a299768e2769f51585fcb3dc960ea71aacc368929d65e \
     --hash=sha256:fa632121aca6d0fcb198a3d8a9f7d937fa5b7518ec947951cfffb44e736d97c8
@@ -212,7 +212,7 @@ lxml==6.1.3 \
     --hash=sha256:ddcf547bea2aee967d6a77779376a45e77e610e8465147a1f3d7e20d539d6e32 \
     --hash=sha256:f683dc6300317700025e41d89a43e0276692ded16113a3c43eab704d605c58e5
     # via
-    #   ai-fund-management-platform
+    #   fund-lens
     #   akshare
 markupsafe==3.0.4 \
     --hash=sha256:0930db9bdc62d22944e10b066448bb65dc9abe9112880c7cab8da54db4284d5f \
@@ -263,14 +263,14 @@ numpy==2.5.4 \
     --hash=sha256:fbde6962867ee75b48b0ee29b2b9372ec5d617799dbaf38e82dc0596f2f7738a \
     --hash=sha256:fe4d21ab149f15e4e6043dfb0de87e6e5f34ac176cde83060e9802981fca2ac2
     # via
-    #   ai-fund-management-platform
+    #   fund-lens
     #   pandas
     #   pydeck
     #   streamlit
 openai==3.46.0 \
     --hash=sha256:7b650117e9bf539029bf880c2eff94a26f281394f6572284efa5d068d4b1c98e \
     --hash=sha256:fb34cd8cab6809ad0aa8dc42493fa622aaa87c814fd8e67a6fb3fa1f1e5d952d
-    # via ai-fund-management-platform
+    # via fund-lens
 openpyxl==3.1.5 \
     --hash=sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2 \
     --hash=sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050
@@ -294,7 +294,7 @@ pandas==3.1.1 \
     --hash=sha256:eef35cb3f07dbc8e10e298b8a55ee4aa04d6511f27d5277f13c3df45d3bbef5c \
     --hash=sha256:f13731c5f3c610c4584dd4f80df0f1279c657a0b3eff32205cda5d541f5385cf
     # via
-    #   ai-fund-management-platform
+    #   fund-lens
     #   akshare
     #   streamlit
 pillow==13.0.0 \
@@ -317,7 +317,7 @@ pillow==13.0.0 \
 plotly==7.1.0 \
     --hash=sha256:dbb7fa18afce40d0a8e80d1bf162eceb3faa0ce5a77fe741ad09a74cf78f53f3 \
     --hash=sha256:f860166a4a3d78c69cb1f4a15f28a5c8283eade98a282a698f3bb853a449ace5
-    # via ai-fund-management-platform
+    # via fund-lens
 protobuf==7.36.2 \
     --hash=sha256:497d0463ff3316681da6c0b9e8d06cb465d61abce00b613ab42226175644d1bb \
     --hash=sha256:89f23aa53c24553a2416fd4fd1ec06f74fa42b14b546d8883128813f775bbfd2 \
@@ -390,7 +390,7 @@ requests==2.34.2 \
     --hash=sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0 \
     --hash=sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
     # via
-    #   ai-fund-management-platform
+    #   fund-lens
     #   akshare
     #   streamlit
 rpds-py==2026.9.1 \
@@ -444,11 +444,11 @@ starlette==1.10.0 \
 streamlit==1.67.0 \
     --hash=sha256:58159dae1199212250bfa5fbba0740996129003266c2c37d465151ef76c48f3b \
     --hash=sha256:f29da87c443bfbdfc52738616e3d65745d438e718da8faf69e2be0da1e52ce64
-    # via ai-fund-management-platform
+    # via fund-lens
 tabulate==0.10.0 \
     --hash=sha256:e2cfde8f79420f6deeffdeda9aaec3b6bc5abce947655d17ac662b126e48a60d \
     --hash=sha256:f0b0622e567335c8fabaaa659f1b33bcb6ddfe2e496071b743aa113f8774f2d3
-    # via ai-fund-management-platform
+    # via fund-lens
 tqdm==4.70.1 \
     --hash=sha256:c293e525e6fef9c20e8728fd4612df02a0aa31bb5fe91ecd93e123b1b7bffa73 \
     --hash=sha256:cefd0eca11b2a37a3aee776544d4f4ae913f02688135b5556b8788dfa474afc4
