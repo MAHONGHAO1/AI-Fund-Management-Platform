@@ -1,6 +1,6 @@
 [project]
 name = "fund-lens"
-version = "0.5.0"
+version = "0.6.0"
 description = "本地运行的基金净值来源追踪与组合分析演示工具"
 requires-python = ">=3.12,<3.13"
 dependencies = [

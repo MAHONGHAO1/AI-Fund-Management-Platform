@@ -116,6 +116,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .return-down { color: var(--color-danger); font-variant-numeric: tabular-nums; }
 .source-badge { display: inline-flex; align-items: center; min-height: 22px; padding: 3px 7px; border-radius: 5px; font-size: 9px; font-weight: 650; white-space: nowrap; }
 .source-badge.simulated { color: var(--color-warning); background: var(--color-warning-bg); }
+.source-badge.fixture { color: var(--color-accent); background: var(--color-accent-soft); }
 .source-badge.unavailable { color: var(--color-danger); background: var(--color-danger-bg); }
 .source-badge.live { color: var(--color-success); background: var(--color-live-bg); }
 .source-badge.unknown { color: var(--color-muted); background: var(--color-ground); }
