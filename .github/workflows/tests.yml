@@ -44,3 +44,5 @@ jobs:
         run: uv sync --locked
       - name: Run tests
         run: uv run --locked python -m pytest -q
+      - name: Verify offline fixtures without network
+        run: uv run --locked python scripts/verify_offline_fixtures.py --output work/offline-fixture-verification.json

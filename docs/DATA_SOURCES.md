@@ -2,7 +2,7 @@
 
 基金页面上每个数字都要说清从哪来。这份文档写清楚数据源是哪几个、按什么顺序试、什么情况算回退、什么情况算不可用。
 
-判据在代码里：`fund_data.py` 的 `load_nav_series` / `load_benchmark_series`，`ai_investment_advisor.py` 的 `fetch_nav_history_with_provenance`。以代码为准。
+判据在代码里：`fund_data.py` 的 `load_nav_series` / `load_benchmark_series`，`ai_investment_advisor.py` 的 `fetch_nav_history_with_provenance`，以及 `fund_fixtures.py` 的样本校验。以代码为准。
 
 ---
 
@@ -16,6 +16,13 @@
 | 2 | AkShare | 记录失败原因，试下一个 |
 | 3 | 模拟数据 | 兜底，曲线可画但指标全部不可用 |
 
+**离线演示模式**（`FUND_OFFLINE_DEMO=1`）走另一条顺序，全程不联网：
+
+| 顺序 | 来源 | 取不到时 |
+|---|---|---|
+| 1 | 本地冻结样本 | 只读已校验的公开净值快照 |
+| 2 | 模拟数据 | 该代码没有冻结样本时的兜底，指标全部不可用 |
+
 **基准历史**（沪深 300 等）：
 
 | 顺序 | 来源 | 取不到时 |
@@ -27,12 +34,13 @@
 
 ## 回退状态
 
-`fallback_status` 一共四个取值，逐个对应到页面上的措辞：
+`fallback_status` 一共五个取值，逐个对应到页面上的措辞：
 
 | 取值 | 什么时候出现 | 页面措辞 |
 |---|---|---|
 | `none` | 第一个来源就取到了 | 来源：东方财富 |
 | `fallback` | 主基准源失败，用了备用源 | 来源：备用基准（请求：主基准） |
+| `fixture` | 离线演示读到校验通过的冻结样本 | 来源：本地冻结样本，**非实时** |
 | `synthetic` | 净值全部真实来源失败，用模拟数据 | 来源：模拟数据，**指标不可用** |
 | `unavailable` | 基准两条来源都失败 | 基准不可用，相关比较指标不出数 |
 
@@ -50,7 +58,15 @@
 
 **网络异常。** 任一来源抛异常都进 `failure_reason`，格式是 `来源: 异常内容`，多个来源用分号连接。
 
-**离线演示模式。** 设 `FUND_OFFLINE_DEMO=1` 时整体不联网，直接给模拟数据，`fallback_status = synthetic`，原因写明是演示模式启用。
+**离线演示模式。** 设 `FUND_OFFLINE_DEMO=1` 时整体不联网：先读 `fixtures/nav/<代码>.json` 的冻结快照；没有该代码的样本才退回合成净值，`fallback_status = synthetic`。冻结样本读取时校验规范行哈希，文件被改动就报错，不会静默修补。
+
+## 冻结样本
+
+`fixtures/nav/` 与 `fixtures/benchmarks/` 是公开净值页面在 2026-11-18 的**带日期快照**，不是实时行情，也不是模型生成的数字。生成脚本 `scripts/freeze_nav_fixtures.py` 只在联网冻结时需要网络；运行时不使用它。
+
+每个样本带 `schema_version`、`code`（或基准名）、`as_of`、`row_count`、`rows_sha256` 和来源信息（`provider`、`url`、`fetched_at_utc`、原始响应 `response_sha256`）。`fund_fixtures.py` 读取时重新计算规范行哈希，和记录不一致就拒绝加载。样本缺失时返回 `None`，由调用方退回合成净值或标记不可用；缺失不会被当成正常来源。
+
+`uv run --locked python scripts/verify_offline_fixtures.py` 在进程内封死 HTTP（任何请求立即失败），跑完 10 只基金的分析、基准比较、历史接口和报告文本检查，输出 `work/offline-fixture-verification.json`。
 
 ## 完整性比对
 

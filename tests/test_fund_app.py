@@ -196,19 +196,20 @@ def test_simulated_nav_never_requests_benchmark_and_comparison_is_unavailable(mo
 def test_offline_demo_mode_skips_external_data_sources(monkeypatch):
     monkeypatch.setenv("FUND_OFFLINE_DEMO", "true")
     monkeypatch.setattr(fund, "fetch_nav_history", lambda code: pytest.fail("network path called"))
-    monkeypatch.setattr(fund, "load_benchmark_history", lambda *args: pytest.fail("benchmark path called"))
+    monkeypatch.setattr(fund, "fetch_benchmark_history", lambda *args: pytest.fail("benchmark path called"))
 
-    holdings = fund.holdings_to_json([{"code": "006887", "name": "合成科技基金", "amount": 1000}])
+    # 999999 不在冻结样本里，离线路径应退回合成净值且不触网。
+    holdings = fund.holdings_to_json([{"code": "999999", "name": "合成科技基金", "amount": 1000}])
     rows = fund.load_data.__wrapped__(0, holdings, "2026-05-28", False)
 
     assert len(rows) == 1
     assert rows[0]["数据来源"] == "模拟数据"
-    assert "FUND_OFFLINE_DEMO" in rows[0]["错误信息"]
+    assert "冻结样本" in rows[0]["错误信息"]
 
-    backtest_nav, backtest_source, backtest_error = fund.load_nav_for_backtest.__wrapped__("006887")
+    backtest_nav, backtest_source, backtest_error = fund.load_nav_for_backtest.__wrapped__("999999")
     assert len(backtest_nav) >= 60
     assert backtest_source == "模拟数据"
-    assert "FUND_OFFLINE_DEMO" in backtest_error
+    assert "冻结样本" in backtest_error
 
 
 def test_reports_mark_synthetic_portfolio():

@@ -33,6 +33,26 @@ def test_local_fallback_describes_data_without_trade_instructions() -> None:
     assert advisor.AI_DISCLAIMER in advisor.ensure_ai_disclaimer(detail)
 
 
+def test_all_declared_trade_terms_fall_back() -> None:
+    import pytest
+
+    fallback_short = advisor.mock_short_advice("测试基金", 12.0, -8.0, 5.0)
+    fallback_detail = advisor.mock_detailed_advice(ROW)
+    cases = [f"建议{term}。" for term in advisor.TRADE_INSTRUCTION_TERMS]
+    cases += ["建议持有该基金。", "建议将仓位提高到 80%。", "可以考虑赎回一半。"]
+    for text in cases:
+        short, detail = advisor.validated_advice(
+            text, text, ROW, fallback_short, fallback_detail, notify=False
+        )
+        assert short == fallback_short, text
+        assert advisor.AI_DISCLAIMER in detail
+
+
+def test_benign_boundary_language_is_not_a_trade_instruction() -> None:
+    assert advisor.advice_respects_boundaries("本说明不构成买卖指令，也不提供交易方向。")
+    assert not advisor.advice_respects_boundaries("建议将仓位提高到 80%。")
+
+
 def test_ai_text_with_trade_instruction_falls_back() -> None:
     fallback_short = advisor.mock_short_advice("测试基金", 12.0, -8.0, 5.0)
     fallback_detail = advisor.mock_detailed_advice(ROW)

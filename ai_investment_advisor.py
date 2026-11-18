@@ -52,6 +52,7 @@ import plotly.graph_objects as go
 import requests
 import streamlit as st
 from fund_data import DataProvenance, load_benchmark_series, load_nav_series, normalize_nav_history
+from fund_fixtures import FixtureError, load_benchmark_fixture, load_nav_fixture
 from openai import OpenAI
 
 
@@ -467,20 +468,31 @@ def offline_demo_enabled() -> bool:
     return os.getenv("FUND_OFFLINE_DEMO", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _fixture_provenance(requested: str, metadata: dict) -> DataProvenance:
+    return DataProvenance(
+        requested, "本地冻结样本", metadata.get("as_of"), "fixture",
+        "FUND_OFFLINE_DEMO 已启用：使用冻结的公开数据快照，非实时行情。", True,
+    )
+
+
 def fetch_nav_history_with_provenance(code: str, lookback_days: int = 460) -> tuple[pd.DataFrame, DataProvenance]:
     if offline_demo_enabled():
-        # 离线演示模式必须整体离线：历史接口也不能偷偷打网络。
+        # 离线演示模式必须整体离线：先读经过哈希校验的冻结样本，缺样本才退回合成净值。
+        fixture = load_nav_fixture(code)
+        if fixture is not None:
+            frame, metadata = fixture
+            return frame, _fixture_provenance("东方财富（冻结）", metadata)
         mock = pd.DataFrame(make_mock_nav(code)).sort_values("date").reset_index(drop=True)
         return mock, DataProvenance(
             "东方财富、AkShare", "模拟数据",
             mock["date"].max().strftime("%Y-%m-%d") if not mock.empty else None,
-            "synthetic", "FUND_OFFLINE_DEMO 已启用：使用合成净值演示界面流程。", True,
+            "synthetic", "未找到该基金的冻结样本；FUND_OFFLINE_DEMO 使用合成净值。", True,
         )
     return load_nav_series(
         code,
         [
             ("东方财富", lambda item: fetch_nav_with_eastmoney(item, lookback_days=lookback_days)),
-            ("AkShare", fetch_nav_with_akshare),
+            ("AkShare", lambda item: fetch_nav_with_akshare(item)),
         ],
         make_mock_nav,
     )
@@ -501,6 +513,11 @@ def fetch_nav_history(code: str) -> tuple[pd.DataFrame, str, str]:
 
 
 def fetch_benchmark_history(benchmark_key: str, lookback_days: int = 460) -> pd.DataFrame:
+    if offline_demo_enabled():
+        fixture = load_benchmark_fixture(benchmark_key)
+        if fixture is None:
+            raise RuntimeError(f"离线演示缺少基准冻结样本：{benchmark_key}")
+        return fixture[0]
     benchmark = BENCHMARKS.get(benchmark_key, BENCHMARKS["沪深300"])
     lookback = max(30, min(int(lookback_days), 3650))
     end_date = datetime.now().strftime("%Y%m%d")
@@ -540,6 +557,15 @@ def load_benchmark_history(
     benchmark_key: str, refresh_token: int = 0, lookback_days: int = 460
 ) -> tuple[pd.DataFrame, DataProvenance]:
     _ = refresh_token
+    if offline_demo_enabled():
+        fixture = load_benchmark_fixture(benchmark_key)
+        if fixture is not None:
+            frame, metadata = fixture
+            return frame, _fixture_provenance(benchmark_key, metadata)
+        return pd.DataFrame(columns=["date", "nav"]), DataProvenance(
+            benchmark_key, "不可用", None, "unavailable",
+            f"离线演示缺少基准冻结样本：{benchmark_key}", False,
+        )
     return load_benchmark_series(
         benchmark_key,
         lambda item: fetch_benchmark_history(item, lookback_days=lookback_days),
@@ -1009,7 +1035,7 @@ def mock_short_advice(name: str, ret_1y: float, mdd: float, hold_ret: float) -> 
     if not math.isnan(ret_1y) and ret_1y < -10:
         return "近一年收益为负；历史表现不代表未来，不构成买卖指令。"
     if hold_ret > 10:
-        return "当前持仓存在历史浮盈；浮盈不决定后续走势，不构成止盈指令。"
+        return "当前持仓存在历史浮盈；浮盈不决定后续走势，不构成交易指令。"
     return "指标处于中性区间；这里只描述历史数据，不构成操作建议。"
 
 
@@ -1064,12 +1090,24 @@ def advice_numbers_are_consistent(text: str, row: dict[str, Any], tolerance: flo
     return True
 
 
-TRADE_INSTRUCTION_TERMS = ("买入", "卖出", "加仓", "减仓", "止盈", "止损", "清仓", "目标价")
+TRADE_INSTRUCTION_TERMS = (
+    "买入", "卖出", "加仓", "减仓", "补仓", "建仓", "清仓", "平仓",
+    "满仓", "空仓", "止盈", "止损", "抄底", "逃顶", "追涨", "杀跌",
+    "目标价", "挂单", "下单", "委托", "调仓", "换仓", "做多", "做空",
+    "杠杆", "融资", "融券", "梭哈",
+)
+TRADE_INSTRUCTION_PATTERNS = (
+    re.compile(r"(建议|应当|应该|可以|考虑)[^。；\n]{0,12}(持有|配置|投入|赎回|申购|入场|离场)"),
+    re.compile(r"(建议|应当|应该|可以)[^。；\n]{0,16}(仓位|持仓比例)[^。；\n]{0,8}\d+\s*%"),
+)
 
 
 def advice_respects_boundaries(text: str) -> bool:
     """The AI layer explains data; it must not turn into a trade instruction."""
-    return not any(term in str(text or "") for term in TRADE_INSTRUCTION_TERMS)
+    value = str(text or "")
+    if any(term in value for term in TRADE_INSTRUCTION_TERMS):
+        return False
+    return not any(pattern.search(value) for pattern in TRADE_INSTRUCTION_PATTERNS)
 
 
 def validated_advice(short_text: str, detail_text: str, row: dict[str, Any], fallback_short: str,
@@ -1187,7 +1225,7 @@ def call_qwen_advice_pair(
 【风险提示】列出2-3个当前数据口径或历史指标的风险点。
 【适用性】说明这些指标适合用来理解什么、不适合用来做什么。
 禁止编造或改写上述数值；如引用收益率、回撤、波动率，必须与输入数据完全一致。
-禁止出现“买入”“卖出”“加仓”“减仓”“止盈”“止损”“清仓”“目标价”等交易指令。
+禁止出现“买入”“卖出”“加仓”“减仓”“补仓”“建仓”“清仓”“平仓”“满仓”“空仓”“止盈”“止损”“抄底”“追涨”“目标价”“挂单”“下单”“调仓”“换仓”“做多”“做空”“杠杆”等交易指令，也不要建议具体仓位比例或持有/赎回动作。
 """.strip()
         response = client.chat.completions.create(
             model=model,
@@ -1371,18 +1409,6 @@ def load_data(
     rows = []
     for holding_item in holdings_list:
         fund = {"code": holding_item["code"], "name": holding_item["name"]}
-        if offline_demo_enabled():
-            rows.append(
-                analyze_fund_with_mock(
-                    fund,
-                    make_mock_nav(fund["code"]),
-                    "FUND_OFFLINE_DEMO 已启用：使用合成净值演示界面流程。",
-                    holdings,
-                    snapshot_date,
-                    auto_update_holdings,
-                )
-            )
-            continue
         try:
             rows.append(analyze_fund(fund, holdings, refresh_token, snapshot_date, auto_update_holdings))
         except Exception as exc:
@@ -1740,7 +1766,11 @@ def selected_funds_radar_chart(rows: list[dict[str, Any]]) -> go.Figure:
 def load_nav_for_backtest(code: str, refresh_token: int = 0) -> tuple[pd.DataFrame, str, str]:
     _ = refresh_token
     if offline_demo_enabled():
-        return make_mock_nav(code), "模拟数据", "FUND_OFFLINE_DEMO 已启用：回测使用合成净值。"
+        fixture = load_nav_fixture(code)
+        if fixture is not None:
+            frame, metadata = fixture
+            return frame, "本地冻结样本", f"使用冻结的公开净值快照（截至 {metadata.get('as_of')}）。"
+        return make_mock_nav(code), "模拟数据", "未找到该基金的冻结样本；FUND_OFFLINE_DEMO 使用合成净值。"
     return fetch_nav_history(code)
 
 
@@ -1994,6 +2024,10 @@ def build_markdown_report(rows: list[dict[str, Any]], *, synthetic_portfolio: bo
     warning_text = ""
     if not warning_df.empty:
         warning_text = "\n> 注意：以下基金使用了模拟数据，仅用于流程验证：" + "、".join(warning_df["基金名称"].tolist()) + "\n"
+    fixture_df = df[df["数据来源"] == "本地冻结样本"]
+    if not fixture_df.empty:
+        warning_text += ("\n> 注意：以下基金使用冻结的公开净值快照，不是实时行情："
+                         + "、".join(fixture_df["基金名称"].tolist()) + "\n")
 
     portfolio_note = "\n> 持仓为虚构合成示例，仅演示组合分析流程。\n" if synthetic_portfolio else ""
     return f"""# 基金量化分析报告
@@ -2089,6 +2123,10 @@ def build_html_report(rows: list[dict[str, Any]], *, synthetic_portfolio: bool =
     if any(row.get("数据来源") == "模拟数据" for row in sorted_rows):
         names = "、".join(row["基金名称"] for row in sorted_rows if row.get("数据来源") == "模拟数据")
         mock_warning = f'<div class="warning">注意：以下基金使用模拟数据，仅用于流程验证：{names}</div>'
+    if any(row.get("数据来源") == "本地冻结样本" for row in sorted_rows):
+        names = "、".join(row["基金名称"] for row in sorted_rows
+                          if row.get("数据来源") == "本地冻结样本")
+        mock_warning += f'<div class="warning">注意：以下基金使用冻结的公开净值快照，不是实时行情：{names}</div>'
     portfolio_warning = '<div class="warning">持仓为虚构合成示例，仅演示组合分析流程。</div>' if synthetic_portfolio else ""
 
     best_row = summary["best"]

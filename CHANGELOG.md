@@ -1,5 +1,19 @@
 # 变更记录
 
+## v0.6.0（2026-11-18 发布）· 冻结样本与跨领域证据
+
+**把离线演示从合成曲线换成可核对的公开净值快照。**
+
+- **冻结样本**：新增 `fixtures/nav/`（10 只基金 / 9,943 行）与 `fixtures/benchmarks/`（5 个基准 / 6,097 行），共 15 个文件 / 1,124,931 字节；采集脚本 `scripts/freeze_nav_fixtures.py` 记录来源 URL、抓取时间、原始响应哈希和规范行哈希。
+- **读取校验**：新增 `fund_fixtures.py`，读取时重算 `rows_sha256`，被改动即失败；样本缺失返回 `None`，不静默修补。
+- **离线语义**：新增 `fallback_status = fixture`；`FUND_OFFLINE_DEMO=1` 先读冻结样本，缺失才退回 `synthetic`；基准也走冻结样本，缺失标记 `unavailable`。`load_data` 不再强制把离线基金打成模拟数据。
+- **断网验收**：新增 `scripts/verify_offline_fixtures.py`，进程内封死 HTTP，跑完 10 只基金分析、基准比较、历史接口与报告披露检查，HTTP 调用 0 次。
+- **AI 边界**：交易指令词从 8 个扩展到 28 个，增加持有 / 仓位 / 赎回模式；测试逐个遍历声明词，边界语句不误伤。
+- **浏览器流程**：Playwright 从 1 条增加到 3 条，覆盖冻结样本标识、失败可重试与首页样例标识；前端新增 `fixture` 来源徽标。
+- **跨领域文档**：新增 `docs/CROSS_DOMAIN.md`，说明与 RoboData 共用的证据结构与不可外推边界。
+- 版本链统一到 0.6.0，并补齐 `RELEASE_NOTES_v0.6.0.md`。
+- 发布说明：[RELEASE_NOTES_v0.6.0.md](RELEASE_NOTES_v0.6.0.md)
+
 ## v0.5.0（2026-11-18 发布）· 命名、版本链与 AI 边界收口
 
 **正确性与定位修复版本，无新基金功能。**

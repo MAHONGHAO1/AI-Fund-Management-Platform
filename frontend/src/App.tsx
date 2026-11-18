@@ -34,6 +34,7 @@ function formatMoney(value: unknown) { const parsed = valueNumber(value); return
 const fallbackLabels: Record<string, string> = {
   none: '正常（未回退）',
   synthetic: '已回退到模拟数据',
+  fixture: '本地冻结样本（非实时）',
   fallback: '已回退到备用来源',
   unavailable: '不可用',
 };
@@ -47,11 +48,12 @@ function SourceBadge({ value }: { value?: string }) {
   const raw = String(value ?? '').trim();
   const lower = raw.toLowerCase();
   const synthetic = raw === '模拟数据' || lower === 'synthetic';
+  const fixture = raw === '本地冻结样本';
   const unavailable = raw === '不可用' || lower === 'unavailable';
   // 未知来源不能落进绿色「实时」分支，否则等于给缺失数据盖章。
-  const unknown = !synthetic && !unavailable && (raw === '' || raw === '未知' || lower === 'unknown' || raw === '—');
-  const tone = synthetic ? 'simulated' : unavailable ? 'unavailable' : unknown ? 'unknown' : 'live';
-  const text = synthetic ? '模拟数据' : unavailable ? '不可用' : raw || '来源未知';
+  const unknown = !synthetic && !fixture && !unavailable && (raw === '' || raw === '未知' || lower === 'unknown' || raw === '—');
+  const tone = synthetic ? 'simulated' : fixture ? 'fixture' : unavailable ? 'unavailable' : unknown ? 'unknown' : 'live';
+  const text = synthetic ? '模拟数据' : fixture ? '本地冻结样本' : unavailable ? '不可用' : raw || '来源未知';
   return <span className={`source-badge ${tone}`}>{text}</span>;
 }
 
@@ -391,7 +393,7 @@ function App() {
         <span className="brand-seal"><BarChart3 size={17} /></span>
         <span><strong>基金观察</strong><small>本地组合分析</small></span>
       </a>
-      <span className="shell-chip version-chip">v0.5.0 · React 工作台</span>
+      <span className="shell-chip version-chip">v0.6.0 · React 工作台</span>
       <span className="shell-crumb">我的分析 <ChevronRight size={13} /> {views[view]}</span>
       {synthetic && <span className="shell-chip demo">离线演示 · 虚构合成组合</span>}
       <span className="shell-chip">{analysis?.summary.as_of ? `数据日期 ${analysis.summary.as_of}` : '数据日期不可用'}</span>
@@ -412,7 +414,7 @@ function App() {
         <div className="fund-heading-actions"><button className="fund-button outline" disabled={busy} onClick={() => void exportReport()}><ArrowDownToLine size={15} />导出分析报告</button><button className="fund-button outline" disabled={busy} onClick={() => void refreshData()}><RefreshCw size={15} />更新数据</button></div>
       </section>
 
-      {synthetic && <div className="synthetic-banner"><span className="banner-mark">i</span><div><strong>当前组合为虚构合成示例</strong><span>持仓金额和收益只用于演示；模拟净值不计算收益与风险指标，也不参与评分。</span></div><button className="text-action" onClick={() => setEditing(true)}>编辑示例</button></div>}
+      {synthetic && <div className="synthetic-banner"><span className="banner-mark">i</span><div><strong>当前组合为虚构合成示例</strong><span>持仓金额和收益只用于演示；每只基金的净值来源、日期与指标可用性以表格和来源卡为准。</span></div><button className="text-action" onClick={() => setEditing(true)}>编辑示例</button></div>}
       {!synthetic && mockRowCount > 0 && <div className="synthetic-banner"><span className="banner-mark">i</span><div><strong>有 {mockRowCount} / {analysis?.rows.length || 0} 只基金使用模拟净值</strong><span>这些行的收益、回撤、波动、夏普与评分显示为不可用，持仓金额按你录入的快照保留，不按模拟净值推算。</span></div></div>}
       {(error || notice) && <div className={error ? 'fund-alert danger-alert' : 'fund-alert success-alert'} role={error ? 'alert' : 'status'}>{error ? <CircleAlert size={16} /> : <Check size={16} />}{error || notice}{error && <button onClick={() => { void load(); setHistoryReload((value) => value + 1); }} disabled={busy}>重新读取</button>}<button onClick={() => { setError(''); setNotice(''); }} aria-label="关闭提示">×</button></div>}
 

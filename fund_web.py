@@ -61,7 +61,7 @@ def _safe_error(exc: Exception, label: str) -> str:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Fund Lens local workbench", version="0.5.0", docs_url=None, redoc_url=None)
+    app = FastAPI(title="Fund Lens local workbench", version="0.6.0", docs_url=None, redoc_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
     @app.middleware("http")
@@ -80,7 +80,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "app": "基金观察 · Fund Lens", "version": "0.5.0", "scope": "loopback"}
+        return {"status": "ok", "app": "基金观察 · Fund Lens", "version": "0.6.0", "scope": "loopback"}
 
     @app.get("/api/data-sources")
     def data_sources():
