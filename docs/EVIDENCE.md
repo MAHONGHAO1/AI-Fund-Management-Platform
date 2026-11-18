@@ -44,6 +44,8 @@ Python 测试覆盖：公开数据源成功 / 失败 / 回退、无效净值、�
 
 CI 在 `ubuntu-latest` 上运行 Python 测试与断网冻结样本验收；前端在 Node.js 24 上运行单测、构建和 Chromium 流程。浏览器流程中的冻结样本与失败恢复使用路由 mock，不代表真实后端全链路 E2E；真实 Python 路径由 `verify_offline_fixtures.py` 单独验证。
 
+本分支实际 CI：[tests #26](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/44324559104) 已通过，`frontend-tests` 与 `python-tests` 两个 job 均为 success，含 `Verify offline fixtures without network` 步骤。CI 只证明该次提交在这些 job 上通过，不替代本机结果或真实后端链路。
+
 ## 3. 数据与截图来源
 
 - 持仓是**虚构合成样例**，不连接真实账户。
