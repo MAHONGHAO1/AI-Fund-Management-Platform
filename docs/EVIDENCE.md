@@ -2,7 +2,7 @@
 
 本文件是 README 中版本、测试数量和验证范围的统一出处。数字只写在这一处；README 只负责指向这里。
 
-最后更新：2026-11-18。环境：Windows 11、Python 3.12.10、Node.js 24、本地单用户。
+最后更新：2026-11-19。环境：Windows 11、Python 3.12.10、Node.js 24、本地单用户。
 
 ## 1. 版本链
 
@@ -24,7 +24,7 @@ uv run --locked python -m pytest -q
 uv run --locked python scripts/verify_offline_fixtures.py
 Push-Location frontend
 npm ci
-npm test
+npm test -- --run
 npx playwright install chromium
 npm run test:e2e
 Pop-Location
@@ -36,22 +36,24 @@ Pop-Location
 | --- | --- |
 | Python（`pytest -q`） | **57 passed** |
 | 断网冻结样本验收 | **通过：10 只基金 / HTTP 调用 0 次** |
-| 前端单测（Vitest） | **7 passed** |
+| 前端单测（Vitest） | **9 passed** |
 | 浏览器流程（Playwright，Chromium） | **3 passed** |
 | 生产构建（`npm run build`） | 通过 |
 
-Python 测试覆盖：公开数据源成功 / 失败 / 回退、无效净值、收益与回撤区间口径、模拟数据不算指标、离线模式不联网、冻结样本哈希校验、冻结样本缺失回退、报告标识、API 契约、AI 边界、版本一致性。
+Python 测试覆盖：公开数据源成功 / 失败 / 回退、无效净值、收益与回撤区间口径、模拟数据不算指标、离线模式不联网、冻结样本哈希校验、冻结样本缺失回退、报告标识、API 契约、AI 边界、版本一致性。前端新增 `history.test.ts`，覆盖基金与基准按日期对齐、各自归一化到起点=100，以及缺失或零起点不造数。净值走势图在 v0.6.0 之后修正了这一比例问题，尚未随新版本发布。
+
+五分钟复现命令与预期输出见 [REPRODUCTION.md](REPRODUCTION.md)。
 
 CI 在 `ubuntu-latest` 上运行 Python 测试与断网冻结样本验收；前端在 Node.js 24 上运行单测、构建和 Chromium 流程。浏览器流程中的冻结样本与失败恢复使用路由 mock，不代表真实后端全链路 E2E；真实 Python 路径由 `verify_offline_fixtures.py` 单独验证。
 
-本分支实际 CI：[tests #26](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/44324559104) 与合并后的 [main tests #29](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/44325504684) 均通过，`frontend-tests` 与 `python-tests` 两个 job 均为 success，含 `Verify offline fixtures without network` 步骤。CI 只证明该次提交在这些 job 上通过，不替代本机结果或真实后端链路。`v0.6.0` tag 指向本文件更新后的提交；它与 `2ef47cb` 的差异仅为文档，未改代码。
+本分支实际 CI：[tests #26](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/44324559104) 与合并后的 [main tests #29](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/44325504684) 均通过，`frontend-tests` 与 `python-tests` 两个 job 均为 success，含 `Verify offline fixtures without network` 步骤。CI 只证明该次提交在这些 job 上通过，不替代本机结果或真实后端链路。`v0.6.0` tag 指向本文件更新后的提交；它与 `2ef47cb` 的差异仅为文档，未改代码。图表归一化修复发生在此 tag 之后，属于未发布变更。
 
 ## 3. 数据与截图来源
 
 - 持仓是**虚构合成样例**，不连接真实账户。
 - 默认离线演示读取 `fixtures/nav/` 与 `fixtures/benchmarks/` 的公开净值快照：10 只基金 / 9,943 行，5 个基准 / 6,097 行，15 个文件 / 1,124,931 字节；快照日期 2026-11-16 至 2026-11-18。它是公开数据的带日期快照，**不是实时行情**。
 - 每个样本读取时校验规范行哈希；被改动的样本会失败关闭。样本缺失时才退回合成净值，并明确标记 `synthetic`。
-- `docs/screenshots/app_v0.3.0.png` 与 `app_v0.3.0-analysis.png` 来自本机 FastAPI 服务的 1920×1080 截图，不是设计稿；它们对应 v0.3.0 布局，保留作迭代对照。
+- `docs/screenshots/app_v0.6.0.png` 来自本机 FastAPI 离线演示服务的 1920×1080 截图，不是设计稿；组合图显示「本地冻结样本」与数据日期。`app_main-analysis.png` 来自 v0.6.0 之后的 `main`，显示归一化到起点=100 的净值走势；该修复尚未随新版本发布。`app_v0.3.0.png` 与 `app_v0.3.0-analysis.png` 保留作迭代对照。
 - v0.2.x 截图与 WebM 对应旧长页布局，保留作迭代对照。
 - 公开数据源回退路径有自动化测试与留痕字段；**没有真实历史故障记录**，不宣称经历过生产级数据源事故。
 

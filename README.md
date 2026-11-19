@@ -12,9 +12,9 @@ v0.6.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地�
 
 > **60 秒证据**：版本链（README / `pyproject.toml` / API / 前端）由测试锁定；默认离线数据来自 10 只基金 / 9,943 行冻结公开净值与 5 个基准，读取时校验行哈希，改动即失败；后端、前端单测与三条浏览器流程均通过。复现命令、测试数量、环境与截图来源统一放在 [docs/EVIDENCE.md](docs/EVIDENCE.md)。AI 只解释已算好的指标，不选基、不改评分；边界与评测见 [docs/AI_LAYER.md](docs/AI_LAYER.md)。
 
-![v0.3.0 工作台：固定 Shell、KPI 四卡、全宽持仓表、右侧检视与底部口径状态条](docs/screenshots/app_v0.3.0.png)
+![v0.6.0 组合总览：虚构合成持仓、冻结公开净值来源、数据日期与右侧检视](docs/screenshots/app_v0.6.0.png)
 
-> 本机 FastAPI 离线演示服务截取，对应 v0.3.0 布局，保留作迭代对照。持仓是虚构合成样例；这张旧截图中的净值标为模拟数据。v0.6.0 默认改用冻结的公开净值快照（非实时），指标可用性与来源仍逐条显示。
+> 2026-11-19 从本机 FastAPI 离线演示服务截取。持仓是虚构合成样例；净值来自仓库内冻结的公开快照，页面逐只标记「本地冻结样本」与「非实时」。
 
 ## 三个你可能正在经历的场面
 
@@ -45,13 +45,27 @@ v0.6.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地�
 
 | 视角 | 查看 | 说明 |
 | --- | --- | --- |
-| 组合总览（16:9） | [截图](docs/screenshots/app_v0.3.0.png) | 固定 Shell、全宽 10 行表格、右侧检视与底部口径状态条 |
-| 绩效与风险（16:9） | [截图](docs/screenshots/app_v0.3.0-analysis.png) | 净值走势加载完成态、数据来源、AI 辅助说明与右侧检视 |
-| 加载完成态 | [截图](docs/screenshots/fund-overview-v0.2.0.png) | 持仓结构环形图与分类图例 |
-| 数据来源与口径 | [截图](docs/screenshots/fund-provenance-v0.2.0.png) | 逐只基金的净值来源、日期与回退状态 |
+| 组合总览（16:9） | [截图](docs/screenshots/app_v0.6.0.png) | 冻结样本来源、数据日期、全宽持仓表与右侧检视 |
+| 绩效与风险（main） | [截图](docs/screenshots/app_main-analysis.png) | 净值走势按起点归一化为 100；该修复在 v0.6.0 之后，尚未发版 |
+| 加载完成态 | [截图](docs/screenshots/fund-overview-v0.2.0.png) | 持仓结构环形图与分类图例（旧布局） |
+| 数据来源与口径 | [截图](docs/screenshots/fund-provenance-v0.2.0.png) | 逐只基金的净值来源、日期与回退状态（旧布局） |
 | 7 秒界面演示 | [WebM](docs/screenshots/demo-v0.2.0.webm) | 指标卡、图表与视图切换（v0.2.x 旧布局） |
 
-v0.2.x 的截图与录像对应旧的长页布局，留作迭代对照；当前界面看 v0.3.0 两张 1920×1080。
+组合总览对应 v0.6.0；分析图来自 v0.6.0 之后的 `main`，含尚未发版的图表归一化修复。v0.2.x / v0.3.0 截图与录像保留作迭代对照。
+
+## 五分钟，自己验一遍
+
+不需要联网、不需要真实账户：
+
+```bash
+git clone https://github.com/MAHONGHAO1/AI-Fund-Management-Platform.git
+cd AI-Fund-Management-Platform
+uv sync --locked
+uv run --locked python -m pytest -q
+uv run --locked python scripts/verify_offline_fixtures.py --output work/offline-fixture-verification.json
+```
+
+期望 `57 passed`，断网验收输出 `"passed": true`、`"funds": 10`，HTTP 调用 0 次。前端命令、Windows / macOS 差异和反馈格式见 [五分钟复现](docs/REPRODUCTION.md)。
 
 ## 为什么单独做这个
 
@@ -232,6 +246,7 @@ flowchart LR
 ## 文档与发布状态
 
 - [证据总表](docs/EVIDENCE.md)：版本链、测试命令与本轮原始汇总、截图来源、AI 边界和未验证事项
+- [五分钟复现](docs/REPRODUCTION.md)：无网络跑 Python 与断网验收，再按需跑前端与浏览器流程
 - [AI 层边界与离线评测](docs/AI_LAYER.md)：AI 只解释已算好的指标；两道输出校验、28 个交易词与回退用例
 - [数据源与回退口径](docs/DATA_SOURCES.md)：取数顺序、五个回退状态的判定、真实会遇到的失效形态、冻结样本校验，以及**目前还没有历史故障记录**这个缺口
 - [跨领域证据叙事](docs/CROSS_DOMAIN.md)：RoboData 与 Fund Lens 共用同一套「来源—校验—失败可见」结构，以及不能互相外推的边界

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactECharts from './Chart';
 import { Activity, ArrowDownToLine, BarChart3, Check, ChevronRight, CircleAlert, Database, RefreshCw, Search, Settings2, ShieldCheck, Sparkles } from 'lucide-react';
 import { api } from './api';
+import { normalizedHistorySeries } from './history';
 import type { Advice, Analysis, DataSourceHealthResponse, FundHistory, FundRow, Holding, Portfolio } from './types';
 
 type ViewKey = 'portfolio' | 'analysis' | 'sources';
@@ -359,15 +360,21 @@ function App() {
   const historyOption = useMemo(() => {
     const nav = history?.nav || [];
     if (!nav.length) return null;
+    const series = normalizedHistorySeries(nav, history?.benchmark || []);
     return {
       tooltip: { trigger: 'axis' },
       legend: { bottom: 0, textStyle: { color: cssToken('--color-muted', '#858b82') } },
-      grid: { left: 52, right: 20, top: 18, bottom: 62 },
-      xAxis: { type: 'category', data: nav.map((point) => point.date), boundaryGap: false, axisLabel: { color: cssToken('--color-muted', '#858b82') } },
-      yAxis: { type: 'value', scale: true, axisLabel: { color: cssToken('--color-muted', '#858b82') }, splitLine: { lineStyle: { color: cssToken('--color-line', '#e0ded4') } } },
+      grid: { left: 52, right: 20, top: 34, bottom: 62 },
+      xAxis: { type: 'category', data: series.dates, boundaryGap: false, axisLabel: { color: cssToken('--color-muted', '#858b82') } },
+      yAxis: {
+        type: 'value', scale: true, name: '起点=100', nameGap: 10,
+        nameTextStyle: { color: cssToken('--color-muted', '#858b82') },
+        axisLabel: { color: cssToken('--color-muted', '#858b82') },
+        splitLine: { lineStyle: { color: cssToken('--color-line', '#e0ded4') } },
+      },
       series: [
-        { name: '基金净值', type: 'line', showSymbol: false, lineStyle: { width: 2.2, color: cssToken('--color-chart-ink', '#477067') }, data: nav.map((point) => point.nav) },
-        ...(history?.benchmark_available ? [{ name: '比较基准', type: 'line', showSymbol: false, lineStyle: { width: 1.6, type: 'dashed', color: cssToken('--color-chart-secondary', '#af7947') }, data: (history?.benchmark || []).map((point) => point.nav) }] : []),
+        { name: '基金净值', type: 'line', showSymbol: false, connectNulls: true, lineStyle: { width: 2.2, color: cssToken('--color-chart-ink', '#477067') }, data: series.nav },
+        ...(history?.benchmark_available ? [{ name: '比较基准', type: 'line', showSymbol: false, connectNulls: true, lineStyle: { width: 1.6, type: 'dashed', color: cssToken('--color-chart-secondary', '#af7947') }, data: series.benchmark }] : []),
       ],
     };
   }, [history]);
@@ -378,6 +385,7 @@ function App() {
     const first = nav[0];
     const last = nav[nav.length - 1];
     const parts = [`净值走势：${first.date} 至 ${last.date} 共 ${nav.length} 个净值点，从 ${first.nav} 变到 ${last.nav}`];
+    parts.push('走势图按各序列起点归一化为 100，仅比较相对走势');
     if (history?.benchmark_available) parts.push('同时显示比较基准曲线');
     else parts.push('比较基准不可用，未生成基准与超额结果');
     return `${parts.join('；')}。`;
@@ -452,7 +460,7 @@ function App() {
           </section>
           {selectedRow && <>
             <div className="detail-metrics"><Metric label={`${periodLabel}收益`} value={formatPercent(intervalReturn)} note={simulatedRow ? '模拟净值不计算收益' : coverageNote} positive={intervalReturn === null ? undefined : intervalReturn >= 0} /><Metric label="近一年最大回撤" value={formatPercent(metricsUsable ? selectedRow.近1年最大回撤 : null)} note={simulatedRow ? '模拟净值不计算回撤' : '按历史净值计算'} /><Metric label="年化波动率" value={formatPercent(metricsUsable ? selectedRow.近1年年化波动率 : null)} note={simulatedRow ? '模拟净值不计算波动率' : '按日收益估算'} /><Metric label="比较基准" value={history?.benchmark_available ? String(selectedRow.比较基准 || '已匹配') : '不可用'} note={history?.benchmark_available ? '显示于净值走势图' : '模拟净值或基准源不可用'} /></div>
-            <section className="fund-panel history-panel"><div className="chart-header"><PanelTitle title="净值走势" note={history?.nav_provenance?.source ? `净值来源：${history.nav_provenance.source} · ${history.nav_provenance.data_date || '日期未知'}` : '正在加载净值来源'} /><SourceBadge value={history?.nav_provenance?.source} /></div>
+            <section className="fund-panel history-panel"><div className="chart-header"><PanelTitle title="净值走势" note={history?.nav_provenance?.source ? `净值来源：${history.nav_provenance.source} · ${history.nav_provenance.data_date || '日期未知'} · 图表起点=100` : '正在加载净值来源'} /><SourceBadge value={history?.nav_provenance?.source} /></div>
               {historyLoading ? <div className="chart-empty" role="status">正在读取历史净值…</div> : historyError ? <div className="chart-empty fund-history-error" role="alert"><CircleAlert size={15} /><span>{historyError}</span><button type="button" className="fund-button outline small-button" onClick={() => setHistoryReload((value) => value + 1)}>重新读取</button></div> : historyOption ? <CardChart height={340} option={historyOption} label={`${selectedRow?.基金名称 || '所选基金'} 净值走势图`} summary={historySummary} /> : <div className="chart-empty">{history ? '当前区间没有可绘制的净值记录。' : '正在读取历史净值…'}</div>}
               {history && !historyLoading && !history.benchmark_available && <div className="unavailable-note"><CircleAlert size={15} />比较基准不可用，页面不生成基准收益或超额结果。</div>}
             </section>

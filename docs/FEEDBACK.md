@@ -4,27 +4,27 @@
 
 ## 当前状态
 
-截至 2026-11-18：**0 条已完成的外部复现记录**。
+截至 2026-11-19：**0 条已完成的外部复现记录**。
 
 仓库内有 Python 测试、断网冻结样本验收与浏览器流程，但「陌生环境能否跑通」仍未被外部验证。作品集评分不把这一项算作已完成。
 
 ## 邀请方式
 
-把仓库链接和 [EVIDENCE.md](EVIDENCE.md) 一起发给对方，请对方只回答可核对的事实：
+把仓库链接和 [REPRODUCTION.md](REPRODUCTION.md) 一起发给对方，请对方只回答可核对的事实：
 
 1. 操作系统、Python / Node.js / uv 版本；
-2. 执行了哪条命令（测试、断网验收或启动服务）；
+2. 执行了哪条命令（Tier 1 / Tier 2 / Tier 3）；
 3. 卡在哪一步，报错原文是什么；
 4. 是否能打开 `http://127.0.0.1:8766/`，界面显示的版本与数据日期；
 5. 是否成功产出 `work/offline-fixture-verification.json`。
 
-不需要对方提供真实姓名或账号；如果对方同意公开，只记录其愿意公开的称呼与链接。
+不需要对方提供真实姓名或账号；如果对方同意公开，只记录其愿意公开的称呼与链接。也可以在仓库里直接使用 [独立复现报告](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/issues/new?template=reproduction.yml) issue 模板。
 
 ## 可直接发送的邀请文案
 
-> 我在做一个基金数据工作台的作品集项目，想验证「陌生人能否在自己的机器上跑通」。如果你愿意花几分钟，请按 `docs/EVIDENCE.md` 跑一次 `pytest` 和 `scripts/verify_offline_fixtures.py`；前端可以再跑 `npm test` 与 `npm run build`。只需回复：操作系统、Python/Node 版本、执行的命令、成功或报错原文。失败同样有用，不需要好评。
+> 我在做一个基金数据工作台的作品集项目，想验证「陌生人能否在自己的机器上跑通」。如果你愿意花几分钟，请按 `docs/REPRODUCTION.md` 走 Tier 1（约 2 分钟，不需要联网）；方便的话再跑 Tier 2 前端。只需回复：操作系统、Python/Node 版本、执行的命令、成功或报错原文。失败同样有用，不需要好评。
 
-把仓库链接、`docs/EVIDENCE.md` 和这段文案一起发出即可；不要代替对方填写结果。
+把仓库链接、`docs/REPRODUCTION.md` 和这段文案一起发出即可；不要代替对方填写结果。
 
 ## 记录模板
 
