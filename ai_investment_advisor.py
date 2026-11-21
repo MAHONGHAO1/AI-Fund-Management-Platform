@@ -1077,6 +1077,10 @@ def advice_numbers_are_consistent(text: str, row: dict[str, Any], tolerance: flo
         (r"近\s*1\s*年\s*最大回撤\s*[为是:]?\s*([+-]?\d+(?:\.\d+)?)\s*%", "近1年最大回撤"),
         (r"最大回撤\s*[为是:]?\s*([+-]?\d+(?:\.\d+)?)\s*%", "近1年最大回撤"),
         (r"年化波动率?\s*[为是:]?\s*([+-]?\d+(?:\.\d+)?)\s*%", "近1年年化波动率"),
+        # 口语化表述：模型常写「近一年赚了 X%」「近一月跌了 X%」，不写字段全名。
+        (r"近\s*(?:1|一)\s*年[^。；\n]{0,10}?(?:赚|涨|跌|收益|亏损?)[^。；\n]{0,6}?([+-]?\d+(?:\.\d+)?)\s*%", "近1年收益率"),
+        (r"近\s*(?:1|一)\s*月[^。；\n]{0,10}?(?:赚|涨|跌|收益|亏损?)[^。；\n]{0,6}?([+-]?\d+(?:\.\d+)?)\s*%", "近1月收益率"),
+        (r"过去\s*(?:1|一)\s*年[^。；\n]{0,10}?(?:赚|涨|跌|收益|亏损?)[^。；\n]{0,6}?([+-]?\d+(?:\.\d+)?)\s*%", "近1年收益率"),
     ]
     for pattern, field in checks:
         matches = re.findall(pattern, text)
@@ -1100,14 +1104,59 @@ TRADE_INSTRUCTION_PATTERNS = (
     re.compile(r"(建议|应当|应该|可以|考虑)[^。；\n]{0,12}(持有|配置|投入|赎回|申购|入场|离场)"),
     re.compile(r"(建议|应当|应该|可以)[^。；\n]{0,16}(仓位|持仓比例)[^。；\n]{0,8}\d+\s*%"),
 )
+# 合规句里也会出现「不构成买入建议」这类否定表述，不能当成交易指令。
+NEGATION_MARKERS = (
+    "不构成", "不提供", "不建议", "不是", "并非", "不等于", "不涉及",
+    "不视为", "不包含", "不代表", "无需", "没有", "不计", "不作",
+)
+
+
+AFFIRMATIVE_VERBS = ("建议", "应当", "应该", "可以", "考虑")
+
+
+def _last_affirmative(before: str) -> int:
+    """否定词之后又出现真正的建议动词时，否定不再覆盖后面的动作。"""
+    position = -1
+    for verb in AFFIRMATIVE_VERBS:
+        index = before.rfind(verb)
+        while index >= 0:
+            if index == 0 or before[index - 1] != "不":
+                position = max(position, index)
+                break
+            index = before.rfind(verb, 0, index)
+    return position
+
+
+def _is_negated(text: str, start: int, end: int) -> bool:
+    """否定只覆盖本句内、且其后没有再次出现建议动词的动作。"""
+    sentence_left = max(text.rfind(char, 0, start) for char in "。；\n") + 1
+    before = text[sentence_left:start]
+    negation = max((before.rfind(marker) for marker in NEGATION_MARKERS), default=-1)
+    if negation < 0:
+        return False
+    return _last_affirmative(before) < negation
 
 
 def advice_respects_boundaries(text: str) -> bool:
-    """The AI layer explains data; it must not turn into a trade instruction."""
+    """The AI layer explains data; it must not turn into a trade instruction.
+
+    否定语境（「不构成买入建议」）不算指令；只看真正落到动作上的那句。
+    """
     value = str(text or "")
-    if any(term in value for term in TRADE_INSTRUCTION_TERMS):
-        return False
-    return not any(pattern.search(value) for pattern in TRADE_INSTRUCTION_PATTERNS)
+    for term in TRADE_INSTRUCTION_TERMS:
+        cursor = 0
+        while True:
+            index = value.find(term, cursor)
+            if index < 0:
+                break
+            if not _is_negated(value, index, index + len(term)):
+                return False
+            cursor = index + len(term)
+    for pattern in TRADE_INSTRUCTION_PATTERNS:
+        for match in pattern.finditer(value):
+            if not _is_negated(value, match.start(), match.start() + 2):
+                return False
+    return True
 
 
 def validated_advice(short_text: str, detail_text: str, row: dict[str, Any], fallback_short: str,

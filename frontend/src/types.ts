@@ -32,6 +32,7 @@ export interface Portfolio {
 export interface Analysis {
   rows: FundRow[];
   summary: { fund_count: number; total_amount: number; total_profit: number; average_score: number | null; source_counts: Record<string, number>; as_of: string | null };
+  offline_demo?: boolean;
 }
 
 export interface FundHistory {

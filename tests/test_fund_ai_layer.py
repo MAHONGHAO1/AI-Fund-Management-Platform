@@ -98,3 +98,37 @@ def test_ai_text_with_consistent_metrics_is_kept_and_disclaimed() -> None:
     assert short == "近1年收益率为 12.0%。"
     assert "近1年收益率为 12.0%" in detail
     assert advisor.AI_DISCLAIMER in detail
+
+
+def test_oral_metric_phrasing_is_checked() -> None:
+    """模型写「近一年赚了 X%」时也要被数值校验拦住，不能只认字段全名。"""
+    assert not advisor.advice_numbers_are_consistent("这只基金近一年赚了 99%，回撤很小。", ROW)
+    assert advisor.advice_numbers_are_consistent("这只基金近一年赚了 12%，回撤很小。", ROW)
+
+
+def test_oral_metric_mismatch_falls_back() -> None:
+    fallback_short = advisor.mock_short_advice("测试基金", 12.0, -8.0, 5.0)
+    fallback_detail = advisor.mock_detailed_advice(ROW)
+    short, detail = advisor.validated_advice(
+        "近一年赚了 99%。",
+        "这只基金近一年赚了 99%，回撤很小。",
+        ROW,
+        fallback_short,
+        fallback_detail,
+        notify=False,
+    )
+
+    assert short == fallback_short
+    assert advisor.AI_DISCLAIMER in detail
+
+
+def test_negated_trade_terms_are_allowed() -> None:
+    """合规句「不建议买入」属于否定语境，不应被当成交易指令。"""
+    assert advisor.advice_respects_boundaries("本说明不建议买入或卖出，也不提供目标价。")
+    assert advisor.advice_respects_boundaries("以上内容不构成买入、加仓或止盈建议。")
+
+
+def test_negation_in_one_clause_does_not_cover_the_next() -> None:
+    """前一分句的否定不能给后一分句的真实建议打掩护。"""
+    assert not advisor.advice_respects_boundaries("不建议观望，建议买入。")
+    assert not advisor.advice_respects_boundaries("不构成投资建议；建议将仓位提高到 80%。")

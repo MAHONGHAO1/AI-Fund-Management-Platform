@@ -394,6 +394,7 @@ function App() {
   const sourceCounts = analysis?.summary.source_counts || {};
   const synthetic = portfolio?.synthetic ?? true;
   const mockRowCount = (analysis?.rows || []).filter((row) => row.数据来源 === '模拟数据').length;
+  const dataMode = analysis ? (analysis.offline_demo ? '离线冻结样本' : '实时数据源') : '数据模式未知';
 
   return <div className={inspectorHidden ? 'fund-app no-inspector' : 'fund-app'}>
     <header className="fund-topbar">
@@ -403,7 +404,7 @@ function App() {
       </a>
       <span className="shell-chip version-chip">v0.6.0 · React 工作台</span>
       <span className="shell-crumb">我的分析 <ChevronRight size={13} /> {views[view]}</span>
-      {synthetic && <span className="shell-chip demo">离线演示 · 虚构合成组合</span>}
+      {synthetic && <span className={`shell-chip ${analysis?.offline_demo ? 'demo' : ''}`}>{dataMode} · 虚构合成组合</span>}
       <span className="shell-chip">{analysis?.summary.as_of ? `数据日期 ${analysis.summary.as_of}` : '数据日期不可用'}</span>
       <div className="fund-top-actions"><button className="shell-toggle" onClick={() => setInspectorHidden(!inspectorHidden)}>{inspectorHidden ? '展开检视' : '收起检视'}</button><span className="local-pill"><ShieldCheck size={15} />仅本机</span><button className="fund-icon-button" aria-label="刷新净值" onClick={() => void refreshData()}><RefreshCw size={17} /></button></div>
     </header>

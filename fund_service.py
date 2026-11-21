@@ -56,6 +56,11 @@ def get_portfolio() -> dict:
         return public_value(deepcopy(_PORTFOLIO))
 
 
+def offline_demo() -> bool:
+    """Expose the real data mode so the UI cannot claim "offline" while fetching."""
+    return advisor.offline_demo_enabled()
+
+
 def update_portfolio(holdings: Any) -> dict:
     normalized = advisor.normalize_holdings(holdings)
     if not normalized:
