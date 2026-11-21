@@ -10,7 +10,10 @@ v0.6.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地�
 
 这个工作台换个顺序：**先回答这个数能不能用，再把这个数给你**。每只基金的净值来源、取数日期、回退原因都逐条摊开；数据撑不起这个区间，就写「不可用」，不拿 0.00% 糊过去。
 
-> **60 秒证据**：版本链（README / `pyproject.toml` / API / 前端）由测试锁定；默认离线数据来自 10 只基金 / 9,943 行冻结公开净值与 5 个基准，读取时校验行哈希，改动即失败；后端、前端单测与三条浏览器流程均通过。复现命令、测试数量、环境与截图来源统一放在 [docs/EVIDENCE.md](docs/EVIDENCE.md)。AI 只解释已算好的指标，不选基、不改评分；边界与评测见 [docs/AI_LAYER.md](docs/AI_LAYER.md)。
+> **30 秒自验**：断网也能验完。`uv run --locked python scripts/verify_offline_fixtures.py` 4 秒输出 `passed: true`、`funds: 10`、HTTP 请求 0 次。
+> 默认离线数据是 10 只基金 / 9,943 行冻结公开净值与 5 个基准，读取时逐文件校验行哈希，改动即失败。
+> AI 只解释已算好的指标，不选基、不改评分；越界整段回退本地模板。
+> 完整命令、测试数量与未验证边界见 [docs/EVIDENCE.md](docs/EVIDENCE.md)。
 
 ![v0.6.0 组合总览：虚构合成持仓、冻结公开净值来源、数据日期与右侧检视](docs/screenshots/app_v0.6.0.png)
 
