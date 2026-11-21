@@ -113,7 +113,11 @@ def create_app() -> FastAPI:
     def analysis():
         try:
             rows = fund_service.analysis_rows()
-            return {"rows": rows, "summary": fund_service.analysis_summary(rows)}
+            return {
+                "rows": rows,
+                "summary": fund_service.analysis_summary(rows),
+                "offline_demo": fund_service.offline_demo(),
+            }
         except Exception as exc:
             raise HTTPException(status_code=503, detail=_safe_error(exc, "数据分析暂不可用")) from exc
 
@@ -172,4 +176,11 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
+
+    # README promises offline demo data by default; direct startup used to fetch the
+    # network silently while the UI still said "offline". Default to the frozen
+    # snapshot and let callers opt into live sources with FUND_OFFLINE_DEMO=0.
+    os.environ.setdefault("FUND_OFFLINE_DEMO", "1")
+    mode = "离线冻结样本" if fund_service.offline_demo() else "实时数据源"
+    print(f"Fund Lens · 数据模式：{mode}（FUND_OFFLINE_DEMO={os.environ.get('FUND_OFFLINE_DEMO')}）")
     uvicorn.run("fund_web:app", host="127.0.0.1", port=int(os.getenv("FUND_WEB_PORT", "8766")), reload=False)
