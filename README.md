@@ -2,9 +2,9 @@
 
 **先说清每个数字从哪来，再谈收益。**
 
-v0.6.0 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户
+v0.6.1 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户
 
-[![tests](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml/badge.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml) [![release](https://img.shields.io/badge/release-v0.6.0-blue.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.6.0) [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![portfolio](https://img.shields.io/badge/portfolio-live-1677ff.svg)](https://mahonghao1.github.io/)
+[![tests](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml/badge.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml) [![release](https://img.shields.io/badge/release-v0.6.1-blue.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.6.0) [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![portfolio](https://img.shields.io/badge/portfolio-live-1677ff.svg)](https://mahonghao1.github.io/)
 
 基金 App 上那个「近一年收益 12.4%」，你信吗？它可能是三年前某天的净值算出来的，也可能中途中止过计算，只是没告诉你。
 
