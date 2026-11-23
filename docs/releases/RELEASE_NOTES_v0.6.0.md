@@ -46,7 +46,7 @@ Playwright 从 1 条增加到 3 条：
 
 ## 跨领域叙事
 
-新增 [docs/CROSS_DOMAIN.md](docs/CROSS_DOMAIN.md)，说明 RoboData 与 Fund Lens 共用的「来源—校验—失败可见」结构，以及不能互相外推的边界。Fund Lens 在这里是跨领域验证，不是第二个旗舰项目。
+新增 [docs/CROSS_DOMAIN.md](../CROSS_DOMAIN.md)，说明 RoboData 与 Fund Lens 共用的「来源—校验—失败可见」结构，以及不能互相外推的边界。Fund Lens 在这里是跨领域验证，不是第二个旗舰项目。
 
 ## 不宣称
 

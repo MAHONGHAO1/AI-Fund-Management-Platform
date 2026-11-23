@@ -2,30 +2,27 @@
 
 **先说清每个数字从哪来，再谈收益。**
 
-v0.6.1 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户
-
-[![tests](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml/badge.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml) [![release](https://img.shields.io/badge/release-v0.6.1-blue.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.6.0) [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![portfolio](https://img.shields.io/badge/portfolio-live-1677ff.svg)](https://mahonghao1.github.io/)
-
 基金 App 上那个「近一年收益 12.4%」，你信吗？它可能是三年前某天的净值算出来的，也可能中途中止过计算，只是没告诉你。
 
-这个工作台换个顺序：**先回答这个数能不能用，再把这个数给你**。每只基金的净值来源、取数日期、回退原因都逐条摊开；数据撑不起这个区间，就写「不可用」，不拿 0.00% 糊过去。
+这个工作台换个顺序：先回答这个数能不能用，再把这个数给你。每只基金的净值来源、取数日期、回退原因都逐条摊开；数据撑不起这个区间，就写「不可用」。
 
-> **30 秒自验**：断网也能验完。`uv run --locked python scripts/verify_offline_fixtures.py` 4 秒输出 `passed: true`、`funds: 10`、HTTP 请求 0 次。
-> 默认离线数据是 10 只基金 / 9,943 行冻结公开净值与 5 个基准，读取时逐文件校验行哈希，改动即失败；后端 57 项、前端 9 项测试与三条浏览器流程通过。
-> AI 只解释已算好的指标，不选基、不改评分；越界整段回退本地模板。
-> 完整命令、测试数量与未验证边界见 [docs/EVIDENCE.md](docs/EVIDENCE.md)。
+**30 秒自验**：断网也能验完。`uv run --locked python scripts/verify_offline_fixtures.py` 输出 `passed: true`、`funds: 10`、HTTP 请求 0 次。完整计数和边界见 [docs/EVIDENCE.md](docs/EVIDENCE.md)。
 
 ![v0.6.0 组合总览：虚构合成持仓、冻结公开净值来源、数据日期与右侧检视](docs/screenshots/app_v0.6.0.png)
 
 > 2026-11-19 从本机 FastAPI 离线演示服务截取。持仓是虚构合成样例；净值来自仓库内冻结的公开快照，页面逐只标记「本地冻结样本」与「非实时」。
 
-## 三个你可能正在经历的场面
+## 我为什么做这个
+
+我受不了「0.00%」被当成「没涨没跌」。
+
+一只成立不到一年的基金没有「近一年收益」，这是事实。很多工具会填一个零，或者悄悄换一段区间，让页面看起来完整。用户看到的不是「不知道」，而是「没涨没跌」——这两个意思差得很远。
+
+## 两个你可能正在经历的场面
 
 **同一只基金，三个 App 三个收益率。** 谁也不说自己是按哪段区间、哪天净值算的。这里把区间写在按钮上，把区间首尾日期写在数字下面，把数据源写在同一张卡里。对不上时，你知道该去质疑谁。
 
 **数据源挂了，页面还在展示收益。** 很多工具会悄悄切到备用源、或者干脆沿用上一次的值，数字照旧好看。这里回退是要留痕的：请求了哪个源、实际用了哪个、为什么回退、失败原因是什么，全在「数据来源」页。
-
-**指标算不出来，却显示成 0.00%。** 一只成立不到一年的基金没有「近一年收益」，这是事实，不是缺陷。工作台让它显示「不可用」，并说明原因，而不是填一个零让你误读成「没涨没跌」。
 
 ## 它替你省掉什么
 
@@ -68,7 +65,7 @@ uv run --locked python -m pytest -q
 uv run --locked python scripts/verify_offline_fixtures.py --output work/offline-fixture-verification.json
 ```
 
-期望 `57 passed`，断网验收输出 `"passed": true`、`"funds": 10`，HTTP 调用 0 次。前端命令、Windows / macOS 差异和反馈格式见 [五分钟复现](docs/REPRODUCTION.md)。
+期望 `61 passed`，断网验收输出 `"passed": true`、`"funds": 10`，HTTP 调用 0 次。前端命令、Windows / macOS 差异和反馈格式见 [五分钟复现](docs/REPRODUCTION.md)。
 
 ## 为什么单独做这个
 
@@ -176,6 +173,10 @@ flowchart LR
 
 每一版改了什么、为什么改，都写在这里。想看当前能力，往上翻到「能力与验证」。
 
+## v0.6.1 · 默认离线与 AI 边界收口
+
+**这一版只修两处「界面说的」和「实际做的」对不上的问题，不加功能。** 直接启动默认进入离线模式，启动日志打印数据模式；AI 数值校验补上口语化表述，越界整段回退本地模板。完整改动与验证见 [v0.6.1 发布说明](docs/releases/RELEASE_NOTES_v0.6.1.md)。
+
 ## v0.6.0 · 冻结样本与跨领域证据
 
 **这一版把「离线演示」从合成曲线换成可核对的公开净值快照。** 之前离线模式全部用 `make_mock_nav`，界面能点，但每个指标都被标记为模拟数据；现在默认 10 只基金读取仓库内冻结的东方财富公开净值，基准读取冻结指数日线，冻结日期、行数、原始响应哈希和规范行哈希都写在 JSON 里。
@@ -201,7 +202,7 @@ flowchart LR
 
 ## v0.5.0 · 命名、版本链与 AI 边界收口
 
-产品名统一为「基金观察 · Fund Lens」；README、`pyproject.toml`、FastAPI、`package.json` 和前端版本条的版本号由测试锁定。AI 输出保留数值一致与交易词两道校验，并补齐回退提示。详见 [v0.5.0 发布说明](RELEASE_NOTES_v0.5.0.md)。
+产品名统一为「基金观察 · Fund Lens」；README、`pyproject.toml`、FastAPI、`package.json` 和前端版本条的版本号由测试锁定。AI 输出保留数值一致与交易词两道校验，并补齐回退提示。详见 [v0.5.0 发布说明](docs/releases/RELEASE_NOTES_v0.5.0.md)。
 
 ## v0.4.0 · 指标口径与模拟数据边界修正
 
@@ -220,7 +221,7 @@ flowchart LR
 
 同时修了一批可用性缺陷：历史净值三态与「重新读取」、持仓草稿二次确认、导出报告走 `fetch`+`Blob`、表格行键盘可达（保留 `<tr>` 行语义）、来源徽标新增「未知」灰色态（未知不再落进绿色「实时」）、回退状态中文化、数字输入允许负号、图表带 `aria-label` 与 `sr-only` 文字摘要。
 
-完整判定、被推翻的审计结论与复现方式见 [v0.4.0 发布说明](RELEASE_NOTES_v0.4.0.md) 与 [上线前审计记录](docs/AUDIT_v0.4.0.md)。
+完整判定、被推翻的审计结论与复现方式见 [v0.4.0 发布说明](docs/releases/RELEASE_NOTES_v0.4.0.md) 与 [上线前审计记录](docs/AUDIT_v0.4.0.md)。
 
 > **报告口径已变**：旧版截图与旧报告里的数值可能和新版不一致——那是旧版算错了，不是新版算错了。
 
@@ -246,6 +247,14 @@ flowchart LR
 
 **边界**：本次是纯前端布局重构，API 契约、Python 分析逻辑、数据口径与验收范围均未改变；服务仍只监听 `127.0.0.1`，不提供公网交互实例。面板拖拽与布局保存未实现。
 
+## 状态
+
+v0.6.1 · React + TypeScript · FastAPI · Python 3.12 · Node.js 24 · 本地单用户
+
+[![tests](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml/badge.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/workflows/tests.yml) [![release](https://img.shields.io/badge/release-v0.6.1-blue.svg)](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.6.1) [![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![portfolio](https://img.shields.io/badge/portfolio-live-1677ff.svg)](https://mahonghao1.github.io/)
+
+Python 全量、前端单测、生产构建和 Chromium 流程均通过；具体计数、CI 运行记录和未验证边界见 [docs/EVIDENCE.md](docs/EVIDENCE.md)。
+
 ## 文档与发布状态
 
 - [证据总表](docs/EVIDENCE.md)：版本链、测试命令与本轮原始汇总、截图来源、AI 边界和未验证事项
@@ -254,17 +263,18 @@ flowchart LR
 - [数据源与回退口径](docs/DATA_SOURCES.md)：取数顺序、五个回退状态的判定、真实会遇到的失效形态、冻结样本校验，以及**目前还没有历史故障记录**这个缺口
 - [跨领域证据叙事](docs/CROSS_DOMAIN.md)：RoboData 与 Fund Lens 共用同一套「来源—校验—失败可见」结构，以及不能互相外推的边界
 - [外部复现反馈模板](docs/FEEDBACK.md)：当前 0 条已完成记录；不伪造用户反馈
-- [v0.6.0 发布说明：冻结样本与跨领域证据](RELEASE_NOTES_v0.6.0.md)
-- [v0.5.0 发布说明：命名、版本链与 AI 边界收口](RELEASE_NOTES_v0.5.0.md)
-- [v0.4.0 发布说明：指标口径与模拟数据边界修正](RELEASE_NOTES_v0.4.0.md)
+- [v0.6.1 发布说明：默认离线与 AI 边界收口](docs/releases/RELEASE_NOTES_v0.6.1.md)
+- [v0.6.0 发布说明：冻结样本与跨领域证据](docs/releases/RELEASE_NOTES_v0.6.0.md)
+- [v0.5.0 发布说明：命名、版本链与 AI 边界收口](docs/releases/RELEASE_NOTES_v0.5.0.md)
+- [v0.4.0 发布说明：指标口径与模拟数据边界修正](docs/releases/RELEASE_NOTES_v0.4.0.md)
 - [v0.4.0 上线前审计记录（含被推翻的判定）](docs/AUDIT_v0.4.0.md)
-- [v0.3.0 发布说明](RELEASE_NOTES_v0.3.0.md)
+- [v0.3.0 发布说明](docs/releases/RELEASE_NOTES_v0.3.0.md)
 - [数据来源与计算状态](docs/STATUS_v0.2.0.md)
-- [v0.2.1 发布说明](RELEASE_NOTES_v0.2.1.md)
-- [v0.2.0 发布说明](RELEASE_NOTES_v0.2.0.md)
+- [v0.2.1 发布说明](docs/releases/RELEASE_NOTES_v0.2.1.md)
+- [v0.2.0 发布说明](docs/releases/RELEASE_NOTES_v0.2.0.md)
 - [变更记录](CHANGELOG.md)
 
-v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.0)；v0.2.1 在功能代码不变的前提下补齐界面截图、图集与介绍，发布为 [v0.2.1 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.1)。v0.3.0 是纯前端布局重构版本，发布为 [v0.3.0 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.3.0)。v0.4.0 是指标口径修正版本（无新功能），发布为 [v0.4.0 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.4.0)。v0.5.0 完成命名、版本链与 AI 边界收口。v0.6.0 加入冻结公开净值样本与断网验收。两个项目的在线展示见[作品集首页](https://mahonghao1.github.io/)与[RoboData 深度页](https://mahonghao1.github.io/robodata/)。
+v0.2.0 已合并到 `main` 并发布为 [GitHub Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.0)；v0.2.1 在功能代码不变的前提下补齐界面截图、图集与介绍，发布为 [v0.2.1 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.1)。v0.3.0 是纯前端布局重构版本，发布为 [v0.3.0 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.3.0)。v0.4.0 是指标口径修正版本（无新功能），发布为 [v0.4.0 Release](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.4.0)。v0.5.0 完成命名、版本链与 AI 边界收口。v0.6.0 加入冻结公开净值样本与断网验收。v0.6.1 默认离线启动，并收紧 AI 数值校验的边界。两个项目的在线展示见[作品集首页](https://mahonghao1.github.io/)与[RoboData 深度页](https://mahonghao1.github.io/robodata/)。
 
 ## English
 
