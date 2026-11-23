@@ -38,4 +38,4 @@ README、`pyproject.toml`、`fund_web.py`、`frontend/package.json`、`frontend/
 | 版本一致性 | README / pyproject / FastAPI / package.json / App.tsx 全部 0.5.0 |
 | 离线模式 | 不发起公开数据源请求 |
 
-完整命令、环境与本轮边界见 [docs/EVIDENCE.md](docs/EVIDENCE.md)。本版仍只监听 `127.0.0.1`，不连接真实账户、不执行交易，也不宣称任何投资收益。
+完整命令、环境与本轮边界见 [docs/EVIDENCE.md](../EVIDENCE.md)。本版仍只监听 `127.0.0.1`，不连接真实账户、不执行交易，也不宣称任何投资收益。

@@ -1,20 +1,21 @@
-# 证据总表 · v0.6.0
+# 证据总表 · v0.6.1
 
 本文件是 README 中版本、测试数量和验证范围的统一出处。数字只写在这一处；README 只负责指向这里。
 
-最后更新：2026-11-19。环境：Windows 11、Python 3.12.10、Node.js 24、本地单用户。
+最后更新：2026-11-23。环境：Windows 11、Python 3.12.10、Node.js 24、本地单用户。
 
 ## 1. 版本链
 
 | 位置 | 值 | 校验方式 |
 | --- | --- | --- |
-| README 版本行 | 0.6.0 | `tests/test_version_consistency.py` |
-| README release 徽章 | 0.6.0 | 同上 |
-| `pyproject.toml` | 0.6.0 | 同上 |
-| `fund_web.py` FastAPI | 0.6.0 | 同上 |
-| `frontend/package.json` | 0.6.0 | 同上 |
-| `frontend/src/App.tsx` 版本条 | 0.6.0 | 同上 |
-| `RELEASE_NOTES_v0.6.0.md` | 存在 | 同上 |
+| README 版本行 | 0.6.1 | `tests/test_version_consistency.py` |
+| README release 徽章 | 0.6.1 | 同上 |
+| README release 徽章链接 | 0.6.1 | 同上 |
+| `pyproject.toml` | 0.6.1 | 同上 |
+| `fund_web.py` FastAPI | 0.6.1 | 同上 |
+| `frontend/package.json` | 0.6.1 | 同上 |
+| `frontend/src/App.tsx` 版本条 | 0.6.1 | 同上 |
+| `docs/releases/RELEASE_NOTES_v0.6.1.md` | 存在 | 同上 |
 
 ## 2. 自动化测试
 
@@ -30,11 +31,11 @@ npm run test:e2e
 Pop-Location
 ```
 
-本机本轮结果：
+本机本轮结果（2026-11-22）：
 
 | 套件 | 结果 |
 | --- | --- |
-| Python（`pytest -q`） | **57 passed** |
+| Python（`pytest -q`） | **61 passed** |
 | 断网冻结样本验收 | **通过：10 只基金 / HTTP 调用 0 次** |
 | 前端单测（Vitest） | **9 passed** |
 | 浏览器流程（Playwright，Chromium） | **3 passed** |
@@ -46,7 +47,9 @@ Python 测试覆盖：公开数据源成功 / 失败 / 回退、无效净值、�
 
 CI 在 `ubuntu-latest` 上运行 Python 测试与断网冻结样本验收；前端在 Node.js 24 上运行单测、构建和 Chromium 流程。浏览器流程中的冻结样本与失败恢复使用路由 mock，不代表真实后端全链路 E2E；真实 Python 路径由 `verify_offline_fixtures.py` 单独验证。
 
-本分支实际 CI：[tests #26](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/44324559104)、合并后的 [main tests #29](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/44325504684) 与图表修复后的 [main tests #32](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/44455631467) 均通过，`frontend-tests` 与 `python-tests` 两个 job 均为 success，含 `Verify offline fixtures without network` 步骤。CI 只证明该次提交在这些 job 上通过，不替代本机结果或真实后端链路。`v0.6.0` tag 指向 `4a38c26`；图表归一化修复在 `af148f6` 上，属于 tag 之后的未发布变更。
+v0.6.1 CI：[tests](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/45006345513) 通过（提交 `83779e9`），`frontend-tests` 与 `python-tests` 两个 job 均为 success，含 `Verify offline fixtures without network` 步骤。
+
+v0.6.0 及之前的 CI：[tests #26](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/44324559104)、合并后的 [main tests #29](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/44325504684) 与图表修复后的 [main tests #32](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/actions/runs/44455631467) 均通过，`frontend-tests` 与 `python-tests` 两个 job 均为 success，含 `Verify offline fixtures without network` 步骤。CI 只证明该次提交在这些 job 上通过，不替代本机结果或真实后端链路。`v0.6.0` tag 指向 `4a38c26`；图表归一化修复在 `af148f6` 上，属于 tag 之后的未发布变更。
 
 ## 3. 数据与截图来源
 

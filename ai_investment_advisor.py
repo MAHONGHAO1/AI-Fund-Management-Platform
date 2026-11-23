@@ -1,3 +1,11 @@
+"""Fund analysis engine and the legacy Streamlit entry.
+
+The analysis functions in this module are the authoritative implementation used
+by the FastAPI service (``fund_service.py``) and the React UI. The Streamlit UI
+in this module is the legacy entry point; new work should target ``fund_web.py``
+plus ``frontend/``.
+"""
+
 from __future__ import annotations
 
 import copy

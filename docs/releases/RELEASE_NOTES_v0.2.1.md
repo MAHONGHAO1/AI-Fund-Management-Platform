@@ -15,4 +15,4 @@ v0.2.1 是**文档与展示版本**：功能代码、测试范围与数据口径
 - 默认持仓仍为明确标注的虚构合成组合；模拟净值与本地 AI 回退仅用于演示，不连接账户、不执行交易、不提供投资建议。
 - 服务仍仅监听本机地址，在线展示为静态页，不提供公网交互服务。
 
-安装、启动与测试方式见 [README](README.md)。本版本已于 2026-11-11 发布为 [GitHub Release v0.2.1](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.1)。
+安装、启动与测试方式见 [README](../../README.md)。本版本已于 2026-11-11 发布为 [GitHub Release v0.2.1](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.2.1)。

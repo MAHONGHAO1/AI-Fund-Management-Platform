@@ -25,11 +25,15 @@ def collect_versions() -> dict[str, str]:
     web = _read("fund_web.py")
     frontend = json.loads(_read("frontend/package.json"))
     app = _read("frontend/src/App.tsx")
+    evidence = _read("docs/EVIDENCE.md")
 
     return {
-        "README 版本行": _search(r"^v(\d+\.\d+\.\d+)\s", readme, "README.md 版本行"),
+        "README 版本行": _search(r"^v(\d+\.\d+\.\d+) · React \+ TypeScript", readme, "README.md 版本行"),
         "README release 徽章": _search(
             r"release-v(\d+\.\d+\.\d+)-blue\.svg", readme, "README.md release 徽章"
+        ),
+        "README release 徽章链接": _search(
+            r"releases/tag/v(\d+\.\d+\.\d+)\)", readme, "README.md release 徽章链接"
         ),
         "pyproject.toml": _search(
             r'^version\s*=\s*"(\d+\.\d+\.\d+)"', pyproject, "pyproject.toml"
@@ -39,6 +43,7 @@ def collect_versions() -> dict[str, str]:
         ),
         "frontend/package.json": frontend["version"],
         "frontend/src/App.tsx": _search(r"v(\d+\.\d+\.\d+) · React 工作台", app, "App.tsx"),
+        "docs/EVIDENCE.md": _search(r"^# 证据总表 · v(\d+\.\d+\.\d+)", evidence, "docs/EVIDENCE.md"),
     }
 
 
@@ -50,8 +55,9 @@ def test_version_chain_agrees() -> None:
     )
 
     version = unique.pop()
-    assert (ROOT / f"RELEASE_NOTES_v{version}.md").exists(), (
-        f"缺少 RELEASE_NOTES_v{version}.md；发布前先写发布说明"
+    release_note = ROOT / "docs" / "releases" / f"RELEASE_NOTES_v{version}.md"
+    assert release_note.exists(), (
+        f"缺少 docs/releases/RELEASE_NOTES_v{version}.md；发布前先写发布说明"
     )
 
 

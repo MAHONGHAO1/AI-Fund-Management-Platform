@@ -34,4 +34,4 @@ v0.3.0 是**界面布局重构版本**：把组合分析界面从「窄栏长页
 - 服务仍只监听 `127.0.0.1`，不提供公网交互实例；面板拖拽与布局保存未实现。
 - v0.2.x 的截图与 7 秒 WebM 演示对应旧的长页布局，保留作迭代对照。
 
-本版本已于 2026-11-12 发布为 [GitHub Release v0.3.0](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.3.0)。安装、启动与复现命令见 [README](README.md)。
+本版本已于 2026-11-12 发布为 [GitHub Release v0.3.0](https://github.com/MAHONGHAO1/AI-Fund-Management-Platform/releases/tag/v0.3.0)。安装、启动与复现命令见 [README](../../README.md)。
