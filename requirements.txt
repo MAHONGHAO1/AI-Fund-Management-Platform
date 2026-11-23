@@ -243,9 +243,9 @@ mini-racer==0.14.1 \
     --hash=sha256:ad4b5c15993caab571fac3d67e0d55157b358bd439e629e0fef26c45a12c8bab \
     --hash=sha256:cdf3a088e1363f16a695288f882abf76b3705b8e1df21418208b87ed010037a4
     # via akshare
-narwhals==2.28.0 \
-    --hash=sha256:1f69d6385ec30e2fa6e1fdeb37c562ecabd0f713f6f3e3b58a668c5c9df9567f \
-    --hash=sha256:2d9860c80d6610820826e94c6e42ce4b1d92d89cdd479586e652a8d211dab345
+narwhals==2.29.0 \
+    --hash=sha256:1c69b3dc30240f6e848c5a673cafc86affa44184ecce721e25b7194663ad10dc \
+    --hash=sha256:eb19c877d9a705300bcc9414499a07b32a52db703369414e57e474ca5fc63c42
     # via
     #   altair
     #   plotly
