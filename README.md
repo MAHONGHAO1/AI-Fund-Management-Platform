@@ -65,7 +65,7 @@ uv run --locked python -m pytest -q
 uv run --locked python scripts/verify_offline_fixtures.py --output work/offline-fixture-verification.json
 ```
 
-期望 `57 passed`，断网验收输出 `"passed": true`、`"funds": 10`，HTTP 调用 0 次。前端命令、Windows / macOS 差异和反馈格式见 [五分钟复现](docs/REPRODUCTION.md)。
+期望 `61 passed`，断网验收输出 `"passed": true`、`"funds": 10`，HTTP 调用 0 次。前端命令、Windows / macOS 差异和反馈格式见 [五分钟复现](docs/REPRODUCTION.md)。
 
 ## 为什么单独做这个
 
@@ -172,6 +172,10 @@ flowchart LR
 ## 版本记录
 
 每一版改了什么、为什么改，都写在这里。想看当前能力，往上翻到「能力与验证」。
+
+## v0.6.1 · 默认离线与 AI 边界收口
+
+**这一版只修两处「界面说的」和「实际做的」对不上的问题，不加功能。** 直接启动默认进入离线模式，启动日志打印数据模式；AI 数值校验补上口语化表述，越界整段回退本地模板。完整改动与验证见 [v0.6.1 发布说明](docs/releases/RELEASE_NOTES_v0.6.1.md)。
 
 ## v0.6.0 · 冻结样本与跨领域证据
 

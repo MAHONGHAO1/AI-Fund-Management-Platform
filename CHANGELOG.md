@@ -27,7 +27,7 @@
 - **浏览器流程**：Playwright 从 1 条增加到 3 条，覆盖冻结样本标识、失败可重试与首页样例标识；前端新增 `fixture` 来源徽标。
 - **跨领域文档**：新增 `docs/CROSS_DOMAIN.md`，说明与 RoboData 共用的证据结构与不可外推边界。
 - 版本链统一到 0.6.0，并补齐 `docs/releases/RELEASE_NOTES_v0.6.0.md`。
-- 发布说明：[docs/releases/RELEASE_NOTES_v0.6.0.md](docs/releases/RELEASE_NOTES_v0.6.0.md)
+- 发布说明：[v0.6.0 发布说明](docs/releases/RELEASE_NOTES_v0.6.0.md)
 
 ## v0.5.0（2026-11-18 发布）· 命名、版本链与 AI 边界收口
 
@@ -39,7 +39,7 @@
 - AI 重新定位为可选文字解释层：本地模板不再给交易指令；提示词禁止预测走势和给出买卖比例 / 目标价 / 择时；新增交易指令词与数值一致性两道输出校验，越界即回退。
 - 修复模块导入副作用：`bootstrap_streamlit()` 原先在 import 时递归启动 Streamlit 服务并抓取真实净值，导致 pytest 收集挂起；现在只在直接运行时引导。
 - 新增 `docs/AI_LAYER.md`、`docs/EVIDENCE.md` 与 `tests/test_fund_ai_layer.py`。
-- 发布说明：[docs/releases/RELEASE_NOTES_v0.5.0.md](docs/releases/RELEASE_NOTES_v0.5.0.md)
+- 发布说明：[v0.5.0 发布说明](docs/releases/RELEASE_NOTES_v0.5.0.md)
 
 ## v0.4.0（2026-11-15 发布）
 
@@ -58,7 +58,7 @@
 - **净值历史缓存**：`@st.cache_data(ttl=1800)`，按「代码 + 回看窗口 + 刷新令牌」缓存。
 - **前端可用性**：历史净值三态与「重新读取」、持仓草稿二次确认、导出报告走 `fetch`+`Blob`、表格行键盘可达（保留 `<tr>` 行语义）、来源徽标新增「未知」灰色态、回退状态中文化、数字输入允许负号、图表 `aria-label` + `sr-only` 摘要、`option` 改 `useMemo` 并去掉 `notMerge`。
 - **测试**：后端 34 项通过（新增回撤窗口、评分跳过、覆盖度、合成契约、报告无 nan 等用例）；前端 5 项单测 + 1 项浏览器流程通过。
-- **发布说明**：[docs/releases/RELEASE_NOTES_v0.4.0.md](docs/releases/RELEASE_NOTES_v0.4.0.md)
+- **发布说明**：[v0.4.0 发布说明](docs/releases/RELEASE_NOTES_v0.4.0.md)
 
 ## v0.3.0（2026-11-12 发布）
 

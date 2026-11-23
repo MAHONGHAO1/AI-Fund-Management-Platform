@@ -20,7 +20,7 @@ uv run --locked python scripts/verify_offline_fixtures.py --output work/offline-
 
 期望结果：
 
-- `pytest` 输出 `57 passed`；
+- `pytest` 输出 `61 passed`；
 - 断网验收输出 `"passed": true`、`"funds": 10`，HTTP 调用 0 次；
 - 10 只基金都标记为「本地冻结样本」，指标与基准可用；报告同时披露冻结快照和虚构合成持仓。
 
